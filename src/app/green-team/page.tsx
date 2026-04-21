@@ -1,7 +1,7 @@
 import { getAllStaff } from '@/lib/queries'
 import { formatTenure } from '@/lib/formatters'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 const ROLE_COLORS: Record<string, string> = {
   'Head Gardener':       'bg-green-100 text-green-800',

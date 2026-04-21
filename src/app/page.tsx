@@ -2,7 +2,7 @@ import { getAllSpecies, getAllInstances, getSiteCounts, getLastUpdated } from '@
 import { formatDate } from '@/lib/formatters'
 import PlantGrid from '@/components/PlantGrid'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const [plants, instances, counts, lastUpdated] = await Promise.all([

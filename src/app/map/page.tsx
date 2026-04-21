@@ -4,7 +4,7 @@ import { getAllSpecies, getAllInstances } from '@/lib/queries'
 import type { PlantInstance, PlantSpecies } from '@/types'
 import MapClient from '@/components/MapClient'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export default async function MapPage() {
   const [species, instances] = await Promise.all([getAllSpecies(), getAllInstances()])

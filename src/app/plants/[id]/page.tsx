@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getSpeciesById, getInstancesBySpecies } from '@/lib/queries'
 import { formatPlantAge, formatDate, splitPipe } from '@/lib/formatters'
+import SubImageGallery from '@/components/SubImageGallery'
 
 export const revalidate = 3600
 
@@ -115,43 +116,47 @@ export default async function PlantDetailPage({
       )}
 
       {/* Sub-images */}
-      {IMAGE_SECTIONS.some(s => {
-        if (naParts.includes(s.key === 'flower' ? 'flowers' : s.key === 'fruit' ? 'fruits' : s.key === 'leaf' ? 'leaves' : s.key === 'bark' ? 'bark' : 'roots')) return false
-        const k = s.key as string
-        return (species as unknown as Record<string, unknown>)[`img_${k}_1_url`]
-      }) && (
-        <Section title="Photo Gallery">
-          {IMAGE_SECTIONS.map(({ label, key }) => {
-            const naKey = key === 'flower' ? 'flowers' : key === 'fruit' ? 'fruits' : key === 'leaf' ? 'leaves' : key === 'bark' ? 'bark' : 'roots'
-            if (naParts.includes(naKey)) return null
-            const sp = species as unknown as Record<string, string | null>
-            const url1 = sp[`img_${key}_1_url`]
-            const url2 = sp[`img_${key}_2_url`]
-            const attr1 = sp[`img_${key}_1_attr`]
-            if (!url1 && !url2) return null
-            return (
-              <div key={key} className="mb-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{label}</p>
-                <div className="flex gap-2">
-                  {url1 && (
-                    <div className="space-y-0.5">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url1} alt={`${label} 1`} className="h-28 w-36 object-cover rounded-lg border border-gray-100" />
-                      {attr1 && <p className="text-[10px] text-gray-400 max-w-[144px] truncate">{attr1}</p>}
-                    </div>
-                  )}
-                  {url2 && (
-                    <div className="space-y-0.5">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url2} alt={`${label} 2`} className="h-28 w-36 object-cover rounded-lg border border-gray-100" />
-                    </div>
-                  )}
+      {(() => {
+        // Build a flat list of all sub-images across all categories
+        const allImgs = IMAGE_SECTIONS.flatMap(({ label, key }) => {
+          const naKey = key === 'flower' ? 'flowers' : key === 'fruit' ? 'fruits' : key === 'leaf' ? 'leaves' : key === 'bark' ? 'bark' : 'roots'
+          if (naParts.includes(naKey)) return []
+          const sp = species as unknown as Record<string, string | null>
+          const url1  = sp[`img_${key}_1_url`]
+          const url2  = sp[`img_${key}_2_url`]
+          const attr1 = sp[`img_${key}_1_attr`]
+          const attr2 = sp[`img_${key}_2_attr`]
+          const imgs = []
+          if (url1) imgs.push({ url: url1, attr: attr1, label })
+          if (url2) imgs.push({ url: url2, attr: attr2, label })
+          return imgs
+        })
+        if (allImgs.length === 0) return null
+        return (
+          <Section title="Photo Gallery">
+            {IMAGE_SECTIONS.map(({ label, key }) => {
+              const naKey = key === 'flower' ? 'flowers' : key === 'fruit' ? 'fruits' : key === 'leaf' ? 'leaves' : key === 'bark' ? 'bark' : 'roots'
+              if (naParts.includes(naKey)) return null
+              const sp   = species as unknown as Record<string, string | null>
+              const url1 = sp[`img_${key}_1_url`]
+              const url2 = sp[`img_${key}_2_url`]
+              if (!url1 && !url2) return null
+              const sectionImgs = [
+                url1 ? { url: url1, attr: sp[`img_${key}_1_attr`], label } : null,
+                url2 ? { url: url2, attr: sp[`img_${key}_2_attr`], label } : null,
+              ].filter(Boolean) as { url: string; attr: string | null; label: string }[]
+              return (
+                <div key={key} className="mb-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    {label}
+                  </p>
+                  <SubImageGallery images={sectionImgs} />
                 </div>
-              </div>
-            )
-          })}
-        </Section>
-      )}
+              )
+            })}
+          </Section>
+        )
+      })()}
 
       {/* Locations */}
       {instances.length > 0 && (

@@ -83,6 +83,7 @@ export default async function PlantDetailPage({
         {species.life_span_description && <Fact label="Lifespan" value={species.life_span_description} />}
         {species.native_region      && <Fact label="Native to" value={species.native_region} />}
         {species.plant_family       && <Fact label="Family"    value={species.plant_family} />}
+        {species.genus              && <Fact label="Genus"     value={species.genus} />}
         {species.sunlight_needs     && <Fact label="Sunlight"  value={species.sunlight_needs} />}
         {species.watering_needs     && <Fact label="Water"     value={species.watering_needs} />}
         {species.toxicity           && <Fact label="Toxicity"  value={species.toxicity} />}
@@ -163,17 +164,24 @@ export default async function PlantDetailPage({
             })}
 
             {/* Genus-match disclaimer — only when at least one image came from a
-                genus-level search (exact species had no photos in the database) */}
-            {hasGenusMatch && (
-              <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100
-                             rounded-lg px-3 py-2 mt-2 leading-relaxed">
-                * Some images in this gallery may depict a closely related species within
-                the same genus, not this exact plant
-                {species.botanical_name ? ` (${species.botanical_name})` : ''}.
-                The exact species had insufficient photos in public databases at time of
-                curation. Use the botanical name above for precise identification.
-              </p>
-            )}
+                genus-level search (exact species had no photos in the database).
+                Uses the stored genus field for precision; falls back to parsing
+                from botanical name if genus is not yet saved. */}
+            {hasGenusMatch && (() => {
+              const genusName = species.genus
+                || species.botanical_name?.trim().split(/\s+/)[0]
+                || 'the same genus'
+              return (
+                <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100
+                               rounded-lg px-3 py-2 mt-2 leading-relaxed">
+                  * Some images in this gallery may depict a closely related species within
+                  genus <em>{genusName}</em>, not this exact plant
+                  {species.botanical_name ? ` (${species.botanical_name})` : ''}.
+                  Photos at species level were unavailable in public databases at time of
+                  curation — use the botanical name above for precise identification.
+                </p>
+              )
+            })()}
           </Section>
         )
       })()}

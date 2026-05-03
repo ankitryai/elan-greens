@@ -24,6 +24,7 @@ export interface PlantSpecies {
   description: string | null
   medicinal_properties: string | null
   plant_family: string | null
+  genus: string | null
   toxicity: string | null
   edible_parts: string | null
   native_region: string | null

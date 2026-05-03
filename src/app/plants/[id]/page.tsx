@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getSpeciesById, getInstancesBySpecies } from '@/lib/queries'
 import { formatPlantAge, formatDate, splitPipe } from '@/lib/formatters'
 import SubImageGallery from '@/components/SubImageGallery'
+import ZoomableImage from '@/components/ZoomableImage'
 
 export const revalidate = 3600
 
@@ -36,11 +37,14 @@ export default async function PlantDetailPage({
       {/* Back link */}
       <Link href="/" className="text-sm text-green-700 hover:underline">← All Plants</Link>
 
-      {/* Main photo */}
+      {/* Main photo — click / tap to zoom (ZoomableImage portal-lightbox) */}
       {species.img_main_url && (
-        <div className="rounded-2xl overflow-hidden aspect-[16/9] bg-gray-100">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={species.img_main_url} alt={species.common_name} className="w-full h-full object-cover" />
+        <div className="aspect-[16/9] bg-gray-100">
+          <ZoomableImage
+            src={species.img_main_url}
+            alt={species.common_name}
+            className="w-full h-full object-cover"
+          />
         </div>
       )}
 

@@ -136,6 +136,9 @@ export default async function PlantDetailPage({
           return imgs
         })
         if (allImgs.length === 0) return null
+        // Flag when any saved sub-image was sourced from a genus-level fallback
+        // (the attribution carries "· genus match" embedded at fetch time).
+        const hasGenusMatch = allImgs.some(img => img.attr?.includes('· genus match'))
         return (
           <Section title="Photo Gallery">
             {IMAGE_SECTIONS.map(({ label, key }) => {
@@ -158,6 +161,19 @@ export default async function PlantDetailPage({
                 </div>
               )
             })}
+
+            {/* Genus-match disclaimer — only when at least one image came from a
+                genus-level search (exact species had no photos in the database) */}
+            {hasGenusMatch && (
+              <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100
+                             rounded-lg px-3 py-2 mt-2 leading-relaxed">
+                * Some images in this gallery may depict a closely related species within
+                the same genus, not this exact plant
+                {species.botanical_name ? ` (${species.botanical_name})` : ''}.
+                The exact species had insufficient photos in public databases at time of
+                curation. Use the botanical name above for precise identification.
+              </p>
+            )}
           </Section>
         )
       })()}

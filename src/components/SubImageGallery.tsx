@@ -118,7 +118,7 @@ export default function SubImageGallery({ images }: { images: SubImage[] }) {
               </p>
               {selected.attr && (
                 <p className="text-white/55 text-xs leading-relaxed max-w-md">
-                  {selected.attr}
+                  {selected.attr.replace(' · genus match', '')}
                 </p>
               )}
               <p className="text-white/35 text-[10px]">

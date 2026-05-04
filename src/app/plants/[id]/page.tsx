@@ -65,6 +65,14 @@ export default async function PlantDetailPage({
           <p className="text-base italic text-gray-500">{species.botanical_name}</p>
         )}
 
+        {/* Taxonomy line — genus + family inline when either is present */}
+        {(species.genus || species.plant_family) && (
+          <p className="text-xs text-gray-400 flex gap-3 flex-wrap pt-0.5">
+            {species.genus       && <span>Genus · <span className="italic">{species.genus}</span></span>}
+            {species.plant_family && <span>Family · <span className="italic">{species.plant_family}</span></span>}
+          </p>
+        )}
+
         {/* Regional names */}
         {(species.hindi_name || species.kannada_name || species.tamil_name) && (
           <div className="flex gap-3 flex-wrap pt-1 text-sm text-gray-500">
@@ -83,7 +91,6 @@ export default async function PlantDetailPage({
         {species.life_span_description && <Fact label="Lifespan" value={species.life_span_description} />}
         {species.native_region      && <Fact label="Native to" value={species.native_region} />}
         {species.plant_family       && <Fact label="Family"    value={species.plant_family} />}
-        {species.genus              && <Fact label="Genus"     value={species.genus} />}
         {species.sunlight_needs     && <Fact label="Sunlight"  value={species.sunlight_needs} />}
         {species.watering_needs     && <Fact label="Water"     value={species.watering_needs} />}
         {species.toxicity           && <Fact label="Toxicity"  value={species.toxicity} />}
@@ -137,9 +144,13 @@ export default async function PlantDetailPage({
           return imgs
         })
         if (allImgs.length === 0) return null
-        // Flag when any saved sub-image was sourced from a genus-level fallback
-        // (the attribution carries "· genus match" embedded at fetch time).
-        const hasGenusMatch = allImgs.some(img => img.attr?.includes('· genus match'))
+        // Show the genus disclaimer when:
+        //   a) any attribution has "· genus match" (new saves — precise marker), OR
+        //   b) any attribution has "via iNaturalist" (old saves pre-dating the marker;
+        //      iNaturalist results may be genus-level when species has no observations)
+        const hasGenusMatch = allImgs.some(
+          img => img.attr?.includes('· genus match') || img.attr?.includes('via iNaturalist')
+        )
         return (
           <Section title="Photo Gallery">
             {IMAGE_SECTIONS.map(({ label, key }) => {

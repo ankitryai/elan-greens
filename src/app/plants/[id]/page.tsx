@@ -97,6 +97,9 @@ export default async function PlantDetailPage({
         {species.edible_parts       && <Fact label="Edible"    value={species.edible_parts} />}
         {species.foliage_type       && <Fact label="Foliage"   value={species.foliage_type} />}
         {species.growth_rate        && <Fact label="Growth"    value={species.growth_rate} />}
+        {species.observations_count != null && (
+          <Fact label="iNat Sightings" value={species.observations_count.toLocaleString()} />
+        )}
         {species.conservation_status && (
           <div className="bg-gray-50 rounded-lg px-3 py-2">
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Conservation</p>

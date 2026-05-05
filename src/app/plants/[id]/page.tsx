@@ -95,6 +95,23 @@ export default async function PlantDetailPage({
         {species.watering_needs     && <Fact label="Water"     value={species.watering_needs} />}
         {species.toxicity           && <Fact label="Toxicity"  value={species.toxicity} />}
         {species.edible_parts       && <Fact label="Edible"    value={species.edible_parts} />}
+        {species.foliage_type       && <Fact label="Foliage"   value={species.foliage_type} />}
+        {species.growth_rate        && <Fact label="Growth"    value={species.growth_rate} />}
+        {species.conservation_status && (
+          <div className="bg-gray-50 rounded-lg px-3 py-2">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Conservation</p>
+            <p className={`text-sm mt-0.5 font-medium ${
+              species.conservation_status === 'Least Concern'    ? 'text-green-700' :
+              species.conservation_status === 'Near Threatened'  ? 'text-yellow-700' :
+              species.conservation_status === 'Vulnerable'       ? 'text-amber-700' :
+              species.conservation_status === 'Endangered' || species.conservation_status === 'Critically Endangered'
+                                                                 ? 'text-red-700' :
+                                                                   'text-gray-800'
+            }`}>
+              {species.conservation_status}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Description */}
@@ -116,6 +133,27 @@ export default async function PlantDetailPage({
             ))}
           </ul>
         </Section>
+      )}
+
+      {/* Propagation methods */}
+      {species.propagation_methods && (
+        <Section title="Propagation">
+          <div className="flex flex-wrap gap-2">
+            {splitPipe(species.propagation_methods).map((method, i) => (
+              <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-green-50 text-green-800 border border-green-100 font-medium">
+                {method}
+              </span>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Habitat */}
+      {species.habitat_type && (
+        <div className="flex items-start gap-2 text-sm text-gray-600">
+          <span className="text-gray-400 shrink-0 mt-0.5">🌍</span>
+          <span><span className="font-medium text-gray-700">Found in · </span>{species.habitat_type}</span>
+        </div>
       )}
 
       {/* Interesting fact */}

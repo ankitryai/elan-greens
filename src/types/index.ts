@@ -87,3 +87,14 @@ export interface StaffMember {
   updated_at: string
   deleted_at: string | null
 }
+
+// ── plant_species_links ───────────────────────────────────────────────────────
+export interface LinkedSpeciesCard {
+  link_id:        string
+  link_label:     string
+  species_id:     string
+  common_name:    string
+  botanical_name: string | null
+  category:       string
+  img_main_url:   string | null
+}

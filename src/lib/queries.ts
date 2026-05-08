@@ -2,7 +2,7 @@
 // Uses the anon client — RLS restricts results to active, non-deleted rows only.
 
 import { createPublicClient } from '@/lib/supabase'
-import type { PlantSpecies, PlantInstance, StaffMember } from '@/types'
+import type { PlantSpecies, PlantInstance, StaffMember, LinkedSpeciesCard } from '@/types'
 
 export async function getAllSpecies(): Promise<PlantSpecies[]> {
   try {
@@ -108,4 +108,41 @@ export async function getLastUpdated(): Promise<string | null> {
   } catch {
     return null
   }
+}
+
+export async function getRelatedSpecies(speciesId: string): Promise<LinkedSpeciesCard[]> {
+  try {
+    const db = createPublicClient()
+    const { data, error } = await db
+      .from('plant_species_links')
+      .select('id, species_a_id, species_b_id, link_label')
+      .or(`species_a_id.eq.${speciesId},species_b_id.eq.${speciesId}`)
+    if (error || !data || data.length === 0) return []
+
+    const otherIds = data.map(row =>
+      row.species_a_id === speciesId ? row.species_b_id : row.species_a_id
+    )
+    const { data: others } = await db
+      .from('plant_species')
+      .select('id, common_name, botanical_name, category, img_main_url')
+      .in('id', otherIds)
+      .eq('active', true)
+      .is('deleted_at', null)
+
+    const othersMap = new Map((others ?? []).map(s => [s.id, s]))
+
+    return data.map(row => {
+      const otherId = row.species_a_id === speciesId ? row.species_b_id : row.species_a_id
+      const other   = othersMap.get(otherId)
+      return {
+        link_id:        row.id,
+        link_label:     row.link_label,
+        species_id:     otherId,
+        common_name:    other?.common_name    ?? 'Unknown',
+        botanical_name: other?.botanical_name ?? null,
+        category:       other?.category       ?? '',
+        img_main_url:   other?.img_main_url   ?? null,
+      }
+    })
+  } catch { return [] }
 }

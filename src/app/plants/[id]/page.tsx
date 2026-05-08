@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getSpeciesById, getInstancesBySpecies } from '@/lib/queries'
+import { getSpeciesById, getInstancesBySpecies, getRelatedSpecies } from '@/lib/queries'
 import { formatPlantAge, formatDate, splitPipe } from '@/lib/formatters'
 import SubImageGallery from '@/components/SubImageGallery'
 import ZoomableImage from '@/components/ZoomableImage'
@@ -22,9 +22,10 @@ export default async function PlantDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [species, instances] = await Promise.all([
+  const [species, instances, relatedSpecies] = await Promise.all([
     getSpeciesById(id),
     getInstancesBySpecies(id),
+    getRelatedSpecies(id),
   ])
   if (!species) notFound()
 
@@ -241,6 +242,37 @@ export default async function PlantDetailPage({
           </Section>
         )
       })()}
+
+      {/* Related varieties */}
+      {relatedSpecies.length > 0 && (
+        <Section title="Also in This Garden">
+          <div className="space-y-2">
+            {relatedSpecies.map(rel => (
+              <Link key={rel.link_id} href={`/plants/${rel.species_id}`}
+                className="flex items-center gap-3 bg-green-50 border border-green-100 rounded-xl px-3 py-2.5 hover:bg-green-100 transition-colors">
+                {rel.img_main_url ? (
+                  <div className="h-12 w-16 flex-shrink-0 rounded overflow-hidden bg-gray-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={rel.img_main_url} alt={rel.common_name}
+                      className="h-full w-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="h-12 w-16 flex-shrink-0 rounded bg-green-100 flex items-center justify-center text-green-400 text-xl">🌿</div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 truncate">{rel.common_name}</p>
+                  {rel.botanical_name && (
+                    <p className="text-xs italic text-gray-400 truncate">{rel.botanical_name}</p>
+                  )}
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-white border border-green-200 text-green-700 shrink-0">
+                  {rel.link_label}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* Locations */}
       {instances.length > 0 && (

@@ -98,7 +98,11 @@ export default async function PlantDetailPage({
         {species.foliage_type       && <Fact label="Foliage"   value={species.foliage_type} />}
         {species.growth_rate        && <Fact label="Growth"    value={species.growth_rate} />}
         {species.observations_count != null && (
-          <Fact label="iNat Sightings" value={species.observations_count.toLocaleString()} />
+          <div className="bg-gray-50 rounded-lg px-3 py-2">
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Global Sightings</p>
+            <p className="text-sm text-gray-800 mt-0.5">{species.observations_count.toLocaleString()}</p>
+            <p className="text-[10px] text-gray-500 mt-0.5 italic">{observationRarity(species.observations_count)}</p>
+          </div>
         )}
         {species.conservation_status && (
           <div className="bg-gray-50 rounded-lg px-3 py-2">
@@ -274,6 +278,25 @@ export default async function PlantDetailPage({
 
     </div>
   )
+}
+
+// Maps an iNaturalist observation count to a plain-English rarity label
+// so residents understand what the number means without knowing the platform.
+//
+// Thresholds are calibrated to iNat's global scale:
+//   <10      — plant barely recorded anywhere (obscure ornamentals, rare species)
+//   10–100   — some specialist records, rarely photographed by public
+//   101–1 k  — recognised species with a small but active observer community
+//   1k–10k   — common enough that naturalists regularly document it
+//   10k–100k — widespread; frequently photographed across regions
+//   >100k    — iconic / ubiquitous species (e.g. Bougainvillea, Frangipani)
+function observationRarity(count: number): string {
+  if (count <= 10)      return 'Very rarely documented globally'
+  if (count <= 100)     return 'Rarely documented globally'
+  if (count <= 1_000)   return 'Occasionally documented globally'
+  if (count <= 10_000)  return 'Commonly documented globally'
+  if (count <= 100_000) return 'Frequently documented globally'
+  return 'Widely documented globally'
 }
 
 function Fact({ label, value }: { label: string; value: string }) {

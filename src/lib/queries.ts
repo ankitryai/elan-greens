@@ -12,7 +12,7 @@ export async function getAllSpecies(): Promise<PlantSpecies[]> {
       .select('*')
       .is('deleted_at', null)
       .eq('active', true)
-      .order('common_name')
+      .order('updated_at', { ascending: false })
     if (error) return []
     return data as PlantSpecies[]
   } catch {

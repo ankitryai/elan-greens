@@ -28,10 +28,11 @@ export default function PlantGrid({
 }) {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<PlantCategory | 'All'>('All')
+  const [sort, setSort] = useState<'updated' | 'name'>('updated')
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return plants.filter(p => {
+    const results = plants.filter(p => {
       const matchesSearch = !q
         || p.common_name.toLowerCase().includes(q)
         || (p.botanical_name?.toLowerCase().includes(q) ?? false)
@@ -41,7 +42,15 @@ export default function PlantGrid({
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory
       return matchesSearch && matchesCategory
     })
-  }, [plants, search, activeCategory])
+
+    if (sort === 'name') {
+      results.sort((a, b) => a.common_name.localeCompare(b.common_name))
+    } else {
+      results.sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''))
+    }
+
+    return results
+  }, [plants, search, activeCategory, sort])
 
   return (
     <div className="space-y-4">
@@ -71,10 +80,34 @@ export default function PlantGrid({
         ))}
       </div>
 
-      {/* Result count */}
-      <p className="text-xs text-gray-400">
-        {filtered.length} {filtered.length === 1 ? 'species' : 'species'} found
-      </p>
+      {/* Sort + result count row */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-400">
+          {filtered.length} {filtered.length === 1 ? 'species' : 'species'} found
+        </p>
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          <button
+            onClick={() => setSort('updated')}
+            className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition-colors ${
+              sort === 'updated'
+                ? 'bg-white text-green-800 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            🕐 Recent
+          </button>
+          <button
+            onClick={() => setSort('name')}
+            className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition-colors ${
+              sort === 'name'
+                ? 'bg-white text-green-800 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            A→Z Name
+          </button>
+        </div>
+      </div>
 
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

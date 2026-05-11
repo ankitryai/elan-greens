@@ -40,7 +40,8 @@ export default async function PlantDetailPage({
 
       {/* Main photo — click / tap to zoom (ZoomableImage portal-lightbox) */}
       {species.img_main_url && (
-        <div className="aspect-[16/9] bg-gray-100">
+        <div className="bg-gray-100 overflow-hidden rounded-lg"
+             style={{ maxHeight: '420px', aspectRatio: '16/9' }}>
           <ZoomableImage
             src={species.img_main_url}
             alt={species.common_name}

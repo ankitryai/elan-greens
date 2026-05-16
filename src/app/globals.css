@@ -1,18 +1,159 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════
+   Material Design 3 — Forest Green source colour #2E7D32
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  /* ── Primary (forest green) ── */
+  --md-primary:              #1A6B2B;
+  --md-on-primary:           #FFFFFF;
+  --md-primary-container:    #A8F5A0;
+  --md-on-primary-container: #002108;
+
+  /* ── Secondary (sage green) ── */
+  --md-secondary:              #52634F;
+  --md-on-secondary:           #FFFFFF;
+  --md-secondary-container:    #D5E8CE;
+  --md-on-secondary-container: #101F0E;
+
+  /* ── Tertiary (teal complement) ── */
+  --md-tertiary:              #3A6570;
+  --md-on-tertiary:           #FFFFFF;
+  --md-tertiary-container:    #BDE9F4;
+  --md-on-tertiary-container: #001F27;
+
+  /* ── Error ── */
+  --md-error:              #BA1A1A;
+  --md-on-error:           #FFFFFF;
+  --md-error-container:    #FFDAD6;
+  --md-on-error-container: #410002;
+
+  /* ── Background / Surface ── */
+  --md-background:    #F7FAF5;
+  --md-on-background: #1A1C19;
+  --md-surface:       #F7FAF5;
+  --md-on-surface:    #1A1C19;
+
+  /* ── Surface Variant ── */
+  --md-surface-variant:    #DCE5D9;
+  --md-on-surface-variant: #404942;
+
+  /* ── Surface containers (tonal elevation layers) ── */
+  --md-surface-container-lowest:  #FFFFFF;
+  --md-surface-container-low:     #F1F5EE;
+  --md-surface-container:         #EAEEE7;
+  --md-surface-container-high:    #E4E9E1;
+  --md-surface-container-highest: #DEE3DB;
+
+  /* ── Outline ── */
+  --md-outline:         #70796E;
+  --md-outline-variant: #BEC9BB;
+
+  /* ── Inverse ── */
+  --md-inverse-surface:    #2E312C;
+  --md-inverse-on-surface: #EFF2EC;
+  --md-inverse-primary:    #8DD58A;
+
+  /* ── Typography ── */
+  --md-font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --md-font-body:    'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+
+  /* ── Elevation (subtle green-tinted shadows) ── */
+  --md-elevation-1: 0 1px 2px rgba(0, 33, 8, .07), 0 1px 3px 1px rgba(0, 33, 8, .05);
+  --md-elevation-2: 0 1px 2px rgba(0, 33, 8, .09), 0 2px 6px 2px rgba(0, 33, 8, .07);
+  --md-elevation-3: 0 4px 8px 3px rgba(0, 33, 8, .07), 0 1px 3px rgba(0, 33, 8, .10);
+
+  /* ── Shape tokens ── */
+  --md-shape-xs:   4px;
+  --md-shape-sm:   8px;
+  --md-shape-md:  12px;
+  --md-shape-lg:  16px;
+  --md-shape-xl:  28px;
+  --md-shape-full: 9999px;
+}
+
+/* ── Tailwind v4 theme bridge ── */
 @theme inline {
-  --color-brand: #2E7D32;
-  --color-brand-light: #E8F5E9;
+  /* Colors */
+  --color-primary:                   var(--md-primary);
+  --color-on-primary:                var(--md-on-primary);
+  --color-primary-container:         var(--md-primary-container);
+  --color-on-primary-container:      var(--md-on-primary-container);
+  --color-secondary:                 var(--md-secondary);
+  --color-on-secondary:              var(--md-on-secondary);
+  --color-secondary-container:       var(--md-secondary-container);
+  --color-on-secondary-container:    var(--md-on-secondary-container);
+  --color-tertiary:                  var(--md-tertiary);
+  --color-tertiary-container:        var(--md-tertiary-container);
+  --color-on-tertiary-container:     var(--md-on-tertiary-container);
+  --color-surface:                   var(--md-surface);
+  --color-on-surface:                var(--md-on-surface);
+  --color-surface-variant:           var(--md-surface-variant);
+  --color-on-surface-variant:        var(--md-on-surface-variant);
+  --color-surface-container-lowest:  var(--md-surface-container-lowest);
+  --color-surface-container-low:     var(--md-surface-container-low);
+  --color-surface-container:         var(--md-surface-container);
+  --color-surface-container-high:    var(--md-surface-container-high);
+  --color-surface-container-highest: var(--md-surface-container-highest);
+  --color-outline:                   var(--md-outline);
+  --color-outline-variant:           var(--md-outline-variant);
+  --color-inverse-surface:           var(--md-inverse-surface);
+  --color-inverse-primary:           var(--md-inverse-primary);
+  --color-error:                     var(--md-error);
+  --color-error-container:           var(--md-error-container);
+
+  /* Backward compat */
+  --color-brand:       var(--md-primary);
+  --color-brand-light: var(--md-primary-container);
+
+  /* Font families */
+  --font-display: var(--md-font-display);
+  --font-body:    var(--md-font-body);
+
+  /* Elevation shadows */
+  --shadow-elevation-1: var(--md-elevation-1);
+  --shadow-elevation-2: var(--md-elevation-2);
+  --shadow-elevation-3: var(--md-elevation-3);
+}
+
+/* ── Base ── */
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: #ffffff;
-  color: #171717;
-  font-family: Inter, system-ui, sans-serif;
-  /* Space for fixed bottom nav on mobile */
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  background: var(--md-background);
+  color: var(--md-on-background);
+  font-family: var(--md-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Space for M3 Navigation Bar on mobile (80 px + safe area) */
+  padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
 @media (min-width: 768px) {
   body { padding-bottom: 0; }
 }
+
+/* ── Scrollbar hide utility ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── M3 State layer ── */
+.m3-state {
+  position: relative;
+  overflow: hidden;
+}
+.m3-state::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  border-radius: inherit;
+  transition: opacity 150ms;
+  pointer-events: none;
+}
+.m3-state:hover::before  { opacity: 0.08; }
+.m3-state:active::before { opacity: 0.12; }

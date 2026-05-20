@@ -7,10 +7,10 @@ import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const NAV_LINKS = [
-  { href: '/',           label: 'Plants'     },
-  { href: '/map',        label: 'Map'        },
-  { href: '/green-team', label: 'Green Team' },
-  { href: '/about',      label: 'About'      },
+  { href: '/',     label: 'Plants' },
+  { href: '/map',  label: 'Map'    },
+  { href: '/news', label: 'News'   },
+  { href: '/about',label: 'About'  },
 ]
 
 export default function TopNav() {

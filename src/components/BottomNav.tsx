@@ -1,14 +1,15 @@
 'use client'
 // M3 Navigation Bar — mobile only (md:hidden).
-// Active indicator: pill behind icon. SVG icons, no emojis.
+// 4 tabs: Plants · Map · News · About
+// Active indicator: secondary-container pill behind icon. SVG icons, no emojis.
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-/* ── SVG icon components ── */
+/* ── SVG icon components (filled = active, outlined = inactive) ── */
+
 function IconLeaf({ active }: { active: boolean }) {
   return active ? (
-    // Filled leaf — active state
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6" aria-hidden>
       <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 2-8 2 1.83-1.37 3.66-2.58 5-3a6.43 6.43 0 00-5.11 1.11C12.26 4.67 11.2 7 11.2 7c-.54-.42-.93-.94-1.2-1.5C8.69 8.5 8.5 11 8.5 11c-1.29-1.5-1.5-3.5-1.5-3.5C5.5 10 5.5 13 6.5 15c.35.7.84 1.37 1.5 1.96"/>
     </svg>
@@ -35,17 +36,15 @@ function IconMap({ active }: { active: boolean }) {
   )
 }
 
-function IconTeam({ active }: { active: boolean }) {
+function IconNews({ active }: { active: boolean }) {
   return active ? (
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6" aria-hidden>
-      <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+      <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/>
     </svg>
   ) : (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6" aria-hidden>
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-      <path d="M16 3.13a4 4 0 010 7.75"/>
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+      <polyline points="22,6 12,13 2,6"/>
     </svg>
   )
 }
@@ -65,10 +64,10 @@ function IconInfo({ active }: { active: boolean }) {
 }
 
 const NAV = [
-  { href: '/',           label: 'Plants',     Icon: IconLeaf },
-  { href: '/map',        label: 'Map',        Icon: IconMap  },
-  { href: '/green-team', label: 'Green Team', Icon: IconTeam },
-  { href: '/about',      label: 'About',      Icon: IconInfo },
+  { href: '/',     label: 'Plants', Icon: IconLeaf },
+  { href: '/map',  label: 'Map',    Icon: IconMap  },
+  { href: '/news', label: 'News',   Icon: IconNews },
+  { href: '/about',label: 'About',  Icon: IconInfo },
 ]
 
 export default function BottomNav() {
@@ -102,7 +101,6 @@ export default function BottomNav() {
             >
               <Icon active={active} />
             </span>
-            {/* M3 Label Small */}
             <span
               className="text-[11px] font-medium tracking-wide"
               style={{

@@ -10,7 +10,10 @@ import Link from 'next/link'
 import { fetchPlantNews } from '@/lib/newsService'
 import type { NewsArticle } from '@/lib/newsService'
 
-export const revalidate = 3600
+// 24 h server-side page cache — plant news doesn't change more frequently.
+// The RSS fetch() calls inside newsService use the `news_cache_hours` setting
+// (also defaults to 24 h) so both layers are aligned.
+export const revalidate = 86400
 
 // ── Page shell ────────────────────────────────────────────────────────────────
 export default function NewsPage() {

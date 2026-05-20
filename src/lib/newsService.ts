@@ -4,6 +4,10 @@
 // Fetches Google News RSS in plant-name batches, filters by a DB-managed
 // domain whitelist, scores for recency + geo proximity, and applies a
 // per-plant cap so no single species monopolises the feed.
+//
+// Date gating — two layers:
+//   1. `after:YYYY-MM-DD` in the RSS query itself   (API-level filter)
+//   2. Hard cutoff on pubDateMs in code              (catches any stragglers)
 // ============================================================================
 
 import { createPublicClient } from '@/lib/supabase'
@@ -17,8 +21,8 @@ export interface NewsArticle {
   sourceLabel:  string          // e.g. "The Better India"
   pubDate:      string          // RFC 2822 as returned by Google RSS
   pubDateMs:    number          // parsed ms since epoch (for sort / display)
-  plants:       Array<{ id: string; common_name: string }>  // max news_max_plant_tags
-  geoTag:       string | null   // "Bengaluru" | "Karnataka" | "South India" | "India" | null
+  plants:       Array<{ id: string; common_name: string }>
+  geoTag:       string | null
 }
 
 // ── Internal types ────────────────────────────────────────────────────────────
@@ -29,7 +33,7 @@ interface RSSItem {
   guid:         string
   pubDateMs:    number
   pubDate:      string
-  bodyText:     string   // title + description, stripped of tags — for plant matching & geo
+  bodyText:     string
   sourceDomain: string
   sourceLabel:  string
 }
@@ -43,11 +47,11 @@ interface PlantRow {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-// Fallback whitelist used if the DB news_sources table is empty / unreachable
 const FALLBACK_DOMAINS = [
   'thebetterindia.com',
   'downtoearth.org.in',
   'india.mongabay.com',
+  'science.thewire.in',
   'sanctuaryasia.com',
   'deccanherald.com',
   'thehindu.com',
@@ -55,12 +59,11 @@ const FALLBACK_DOMAINS = [
   'indianexpress.com',
 ]
 
-// Geo scoring — checked in priority order; first match wins
 const GEO_TIERS = [
-  { terms: ['bengaluru', 'bangalore'],                                              score: 30, tag: 'Bengaluru'   },
-  { terms: ['karnataka'],                                                           score: 20, tag: 'Karnataka'   },
-  { terms: ['south india', 'tamil nadu', 'andhra', 'kerala', 'telangana'],          score: 15, tag: 'South India' },
-  { terms: ['india', 'indian'],                                                     score: 10, tag: 'India'       },
+  { terms: ['bengaluru', 'bangalore'],                                       score: 30, tag: 'Bengaluru'   },
+  { terms: ['karnataka'],                                                    score: 20, tag: 'Karnataka'   },
+  { terms: ['south india', 'tamil nadu', 'andhra', 'kerala', 'telangana'], score: 15, tag: 'South India' },
+  { terms: ['india', 'indian'],                                              score: 10, tag: 'India'       },
 ] as const
 
 // ── XML helpers ───────────────────────────────────────────────────────────────
@@ -91,7 +94,7 @@ function extractDomain(url: string): string {
   catch { return '' }
 }
 
-// ── RSS parser (no external deps — Google RSS format is consistent enough) ────
+// ── RSS parser ────────────────────────────────────────────────────────────────
 
 function parseRSS(xml: string): RSSItem[] {
   const items: RSSItem[] = []
@@ -101,13 +104,13 @@ function parseRSS(xml: string): RSSItem[] {
   while ((m = re.exec(xml)) !== null) {
     const raw = m[1]
 
-    const title   = cleanField(raw.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? '')
-    const url     = cleanField(raw.match(/<link>([\s\S]*?)<\/link>/)?.[1] ?? '')
-    const guid    = cleanField(raw.match(/<guid[^>]*>([\s\S]*?)<\/guid>/)?.[1] ?? url)
-    const pubDate = cleanField(raw.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] ?? '')
+    const title   = cleanField(raw.match(/<title>([\s\S]*?)<\/title>/)?.[1]             ?? '')
+    const url     = cleanField(raw.match(/<link>([\s\S]*?)<\/link>/)?.[1]               ?? '')
+    const guid    = cleanField(raw.match(/<guid[^>]*>([\s\S]*?)<\/guid>/)?.[1]          ?? url)
+    const pubDate = cleanField(raw.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]         ?? '')
     const desc    = cleanField(raw.match(/<description>([\s\S]*?)<\/description>/)?.[1] ?? '')
-    const srcUrl  = raw.match(/<source[^>]*url="([^"]+)"/)?.[1] ?? ''
-    const srcLbl  = cleanField(raw.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1] ?? '')
+    const srcUrl  = raw.match(/<source[^>]*url="([^"]+)"/)?.[1]                         ?? ''
+    const srcLbl  = cleanField(raw.match(/<source[^>]*>([\s\S]*?)<\/source>/)?.[1]      ?? '')
 
     if (!title || !url) continue
 
@@ -136,6 +139,7 @@ function recencyScore(pubDateMs: number): number {
   if (ageDays <= 1)  return 100
   if (ageDays <= 7)  return  75
   if (ageDays <= 30) return  40
+  if (ageDays <= 90) return  20
   return 10
 }
 
@@ -148,9 +152,15 @@ function geoScore(bodyText: string): { score: number; tag: string | null } {
   return { score: 0, tag: null }
 }
 
-// ── RSS fetch (server-side, Next.js cached per hour) ─────────────────────────
+// ── RSS fetch ─────────────────────────────────────────────────────────────────
 
-async function fetchBatch(plants: PlantRow[]): Promise<RSSItem[]> {
+async function fetchBatch(
+  plants:       PlantRow[],
+  afterDate:    string,   // YYYY-MM-DD — passed to Google's `after:` operator
+  cacheSeconds: number,
+): Promise<RSSItem[]> {
+
+  // Build query: "Common Name" OR "Botanical Name" for each plant in the batch
   const terms = plants
     .flatMap(p => {
       const names: string[] = [`"${p.common_name}"`]
@@ -159,14 +169,18 @@ async function fetchBatch(plants: PlantRow[]): Promise<RSSItem[]> {
     })
     .join(' OR ')
 
+  // `after:` tells Google News to only return articles published after this date.
+  // We wrap the OR terms in parens so the date operator applies to the whole set.
+  const query = `(${terms}) after:${afterDate}`
+
   const url =
-    `https://news.google.com/rss/search?q=${encodeURIComponent(terms)}` +
+    `https://news.google.com/rss/search?q=${encodeURIComponent(query)}` +
     `&hl=en-IN&gl=IN&ceid=IN:en`
 
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ElanGreensBot/1.0; +https://elan-greens.vercel.app)' },
-      next: { revalidate: 3600 },   // server-side cache — each unique URL cached 1 h
+      next: { revalidate: cacheSeconds },
     })
     if (!res.ok) return []
     return parseRSS(await res.text())
@@ -181,7 +195,6 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
   try {
     const db = createPublicClient()
 
-    // Read plants + config in parallel
     const [plantsRes, sourcesRes, settingsRes] = await Promise.all([
       db.from('plant_species')
         .select('id, common_name, botanical_name, observations_count')
@@ -193,31 +206,46 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
       db.from('app_settings').select('key, value'),
     ])
 
-    // Resolve settings
+    // ── Resolve settings ────────────────────────────────────────────────────
     const settingsMap = Object.fromEntries(
       (settingsRes.data ?? []).map(s => [s.key as string, s.value as string])
     )
-    const maxArticles  = parseInt(settingsMap.news_max_articles  ?? '10', 10)
-    const maxTags      = parseInt(settingsMap.news_max_plant_tags ?? '3',  10)
-    const maxPlants    = parseInt(settingsMap.news_max_plants     ?? '20', 10)
-    const maxPerPlant  = parseInt(settingsMap.news_max_per_plant  ?? '2',  10)
+    const maxArticles  = parseInt(settingsMap.news_max_articles   ?? '10',  10)
+    const maxTags      = parseInt(settingsMap.news_max_plant_tags  ?? '3',   10)
+    const maxPlants    = parseInt(settingsMap.news_max_plants      ?? '20',  10)
+    const maxPerPlant  = parseInt(settingsMap.news_max_per_plant   ?? '2',   10)
+    const maxAgeDays   = parseInt(settingsMap.news_max_age_days    ?? '365', 10)
+    const cacheHours   = parseInt(settingsMap.news_cache_hours     ?? '24',  10)
+    const cacheSeconds = cacheHours * 3600
 
+    // ── Date gate ───────────────────────────────────────────────────────────
+    // Layer 1: `after:YYYY-MM-DD` in the RSS query (reduces API-side results)
+    // Layer 2: hard cutoff on pubDateMs below (catches any stragglers)
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays)
+    const afterDateStr = cutoffDate.toISOString().split('T')[0]   // YYYY-MM-DD
+    const cutoffMs     = cutoffDate.getTime()
+
+    // ── Domains ─────────────────────────────────────────────────────────────
     const domains: string[] =
       (sourcesRes.data ?? []).length
         ? (sourcesRes.data ?? []).map((s: { domain: string }) => s.domain)
         : FALLBACK_DOMAINS
 
+    // ── Plants to query ─────────────────────────────────────────────────────
     const plants = ((plantsRes.data ?? []) as PlantRow[]).slice(0, maxPlants)
     if (!plants.length) return []
 
-    // Batch into groups of 4 (keeps query strings concise)
+    // Batch into groups of 4
     const batches: PlantRow[][] = []
     for (let i = 0; i < plants.length; i += 4) batches.push(plants.slice(i, i + 4))
 
-    // Fetch all batches in parallel — each is server-side cached
-    const batchResults = await Promise.all(batches.map(fetchBatch))
+    // Fetch all batches in parallel (each URL is server-side cached)
+    const batchResults = await Promise.all(
+      batches.map(b => fetchBatch(b, afterDateStr, cacheSeconds))
+    )
 
-    // Flatten + deduplicate by guid
+    // ── Flatten + deduplicate ────────────────────────────────────────────────
     const seen = new Set<string>()
     const unique = batchResults.flat().filter(item => {
       if (seen.has(item.guid)) return false
@@ -225,19 +253,21 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
       return true
     })
 
-    // Filter: keep only whitelisted domains
-    const whitelisted = unique.filter(item => domains.includes(item.sourceDomain))
+    // ── Filter: domain whitelist + hard age cutoff ───────────────────────────
+    const filtered = unique.filter(item =>
+      domains.includes(item.sourceDomain) &&
+      (!item.pubDateMs || item.pubDateMs >= cutoffMs)   // Layer 2 age gate
+    )
 
-    // Score and annotate each item
+    // ── Score ────────────────────────────────────────────────────────────────
     type Scored = {
-      item:    RSSItem
-      plants:  Array<{ id: string; common_name: string }>
-      geoTag:  string | null
-      score:   number
+      item:   RSSItem
+      plants: Array<{ id: string; common_name: string }>
+      geoTag: string | null
+      score:  number
     }
 
-    const scored: Scored[] = whitelisted.map(item => {
-      // Identify which plants are mentioned
+    const scored: Scored[] = filtered.map(item => {
       const matched = plants.filter(p =>
         item.bodyText.includes(p.common_name.toLowerCase()) ||
         (p.botanical_name && item.bodyText.includes(p.botanical_name.toLowerCase()))
@@ -246,36 +276,30 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
       const base = recencyScore(item.pubDateMs) + geo.score
       return {
         item,
-        plants:  matched.slice(0, maxTags).map(p => ({ id: p.id, common_name: p.common_name })),
-        geoTag:  geo.tag,
-        score:   base,
+        plants: matched.slice(0, maxTags).map(p => ({ id: p.id, common_name: p.common_name })),
+        geoTag: geo.tag,
+        score:  base,
       }
     })
 
-    // Remove items that matched zero plants (tangential articles)
+    // Remove articles with no plant match
     const matched = scored.filter(s => s.plants.length > 0)
-
-    // Sort by score desc
     matched.sort((a, b) => b.score - a.score)
 
-    // Greedy selection with per-plant cap — ensures coverage spread
+    // ── Greedy selection with per-plant cap ──────────────────────────────────
     const selected: Scored[] = []
     const plantCounts = new Map<string, number>()
 
     for (const entry of matched) {
       if (selected.length >= maxArticles) break
-
       const primaryId    = entry.plants[0].id
       const currentCount = plantCounts.get(primaryId) ?? 0
-
-      // Hard cap: skip if primary plant already at limit
       if (currentCount >= maxPerPlant) continue
-
       selected.push(entry)
       plantCounts.set(primaryId, currentCount + 1)
     }
 
-    // Horizontal floor: if < 4 distinct plants represented, fill gaps
+    // ── Horizontal floor: ensure ≥ 4 distinct plants where possible ──────────
     const distinctIds = new Set(selected.flatMap(s => s.plants.map(p => p.id)))
     if (distinctIds.size < 4) {
       for (const entry of matched) {
@@ -289,7 +313,6 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
       }
     }
 
-    // Map to public shape
     return selected.map(({ item, plants: ps, geoTag }) => ({
       title:        item.title,
       url:          item.url,

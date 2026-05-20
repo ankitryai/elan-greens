@@ -1,6 +1,9 @@
 // News page — Server Component.
-// Suspense lets the page shell render instantly; the feed streams in.
-// revalidate = 3600 means the feed is re-fetched at most once per hour.
+// Suspense lets the page shell render instantly while the feed streams in.
+// revalidate = 3600 → feed is re-fetched server-side at most once per hour.
+//
+// NOTE: NO event handlers here — this is a Server Component.
+// Hover effects are handled by CSS classes in globals.css (.news-card, .plant-tag-chip).
 
 import { Suspense } from 'react'
 import Link from 'next/link'
@@ -20,10 +23,7 @@ export default function NewsPage() {
       >
         <h1
           className="text-2xl font-bold"
-          style={{
-            fontFamily: 'var(--md-font-display)',
-            color: 'var(--md-primary)',
-          }}
+          style={{ fontFamily: 'var(--md-font-display)', color: 'var(--md-primary)' }}
         >
           Plant News
         </h1>
@@ -32,7 +32,7 @@ export default function NewsPage() {
         </p>
       </div>
 
-      {/* Feed — streams in; shows skeleton while fetching */}
+      {/* Feed streams in via Suspense */}
       <Suspense fallback={<NewsLoadingSkeleton />}>
         <NewsFeed />
       </Suspense>
@@ -40,7 +40,7 @@ export default function NewsPage() {
   )
 }
 
-// ── Async feed component (streams in via Suspense) ────────────────────────────
+// ── Async feed component ──────────────────────────────────────────────────────
 async function NewsFeed() {
   const articles = await fetchPlantNews()
 
@@ -59,7 +59,7 @@ async function NewsFeed() {
           No recent positive news — check back tomorrow.
         </p>
         <p className="text-xs text-center max-w-xs" style={{ color: 'var(--md-outline)' }}>
-          News is sourced from platforms like The Better India, Mongabay, and Down to Earth.
+          Sourced from The Better India, Mongabay India, Down to Earth, and similar platforms.
         </p>
       </div>
     )
@@ -71,42 +71,27 @@ async function NewsFeed() {
         <ArticleCard key={`${article.url}-${idx}`} article={article} />
       ))}
       <p className="text-xs text-center pt-3 pb-1" style={{ color: 'var(--md-outline)' }}>
-        Sourced from curated positive platforms · refreshed hourly
+        Curated positive platforms · refreshed hourly
       </p>
     </div>
   )
 }
 
-// ── Article card ──────────────────────────────────────────────────────────────
+// ── Article card — pure Server Component, CSS-only hover (no event handlers) ──
 function ArticleCard({ article }: { article: NewsArticle }) {
-  const relativeTime = formatRelativeTime(article.pubDateMs)
+  const relTime = relativeTime(article.pubDateMs)
 
   return (
-    <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block rounded-[16px] p-4 transition-all duration-200 group"
-      style={{
-        background: 'var(--md-surface-container-lowest)',
-        boxShadow: 'var(--md-elevation-1)',
-      }}
-      onMouseEnter={e => {
-        ;(e.currentTarget as HTMLAnchorElement).style.boxShadow = 'var(--md-elevation-2)'
-      }}
-      onMouseLeave={e => {
-        ;(e.currentTarget as HTMLAnchorElement).style.boxShadow = 'var(--md-elevation-1)'
-      }}
+    // Outer div — CSS class handles elevation hover (globals.css .news-card)
+    <div
+      className="news-card rounded-[16px] p-4"
+      style={{ background: 'var(--md-surface-container-lowest)' }}
     >
-      {/* Top row: source + time + geo tag */}
+      {/* Meta row: source + time + geo */}
       <div className="flex items-center gap-2 flex-wrap mb-2">
-        {/* Source initial badge */}
         <span
-          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-          style={{
-            background: 'var(--md-secondary-container)',
-            color: 'var(--md-on-secondary-container)',
-          }}
+          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 select-none"
+          style={{ background: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)' }}
           aria-hidden
         >
           {article.sourceLabel.charAt(0).toUpperCase()}
@@ -118,19 +103,14 @@ function ArticleCard({ article }: { article: NewsArticle }) {
 
         <span className="text-xs" style={{ color: 'var(--md-outline-variant)' }}>·</span>
 
-        <span className="text-xs" style={{ color: 'var(--md-outline)' }}>
-          {relativeTime}
-        </span>
+        <span className="text-xs" style={{ color: 'var(--md-outline)' }}>{relTime}</span>
 
         {article.geoTag && (
           <>
             <span className="text-xs" style={{ color: 'var(--md-outline-variant)' }}>·</span>
             <span
               className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{
-                background: 'var(--md-tertiary-container)',
-                color: 'var(--md-on-tertiary-container)',
-              }}
+              style={{ background: 'var(--md-tertiary-container)', color: 'var(--md-on-tertiary-container)' }}
             >
               📍 {article.geoTag}
             </span>
@@ -138,49 +118,39 @@ function ArticleCard({ article }: { article: NewsArticle }) {
         )}
       </div>
 
-      {/* Headline */}
-      <p
-        className="text-sm font-semibold leading-snug group-hover:underline underline-offset-2 mb-3"
+      {/* Headline — opens article in new tab */}
+      <a
+        href={article.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block mb-3 text-sm font-semibold leading-snug hover:underline underline-offset-2"
         style={{ color: 'var(--md-on-surface)' }}
       >
         {article.title}
-      </p>
+      </a>
 
-      {/* Plant tags */}
+      {/* Plant tags — separate links, NOT nested inside the headline <a> */}
       {article.plants.length > 0 && (
-        <div className="flex flex-wrap gap-1.5" onClick={e => e.stopPropagation()}>
+        <div className="flex flex-wrap gap-1.5">
           {article.plants.map(plant => (
             <Link
               key={plant.id}
               href={`/plants/${plant.id}`}
-              className="text-[11px] font-medium px-2.5 py-1 rounded-full transition-colors duration-150"
-              style={{
-                background: 'var(--md-primary-container)',
-                color: 'var(--md-on-primary-container)',
-              }}
-              onMouseEnter={e => {
-                ;(e.currentTarget as HTMLAnchorElement).style.background = 'var(--md-secondary-container)'
-                ;(e.currentTarget as HTMLAnchorElement).style.color = 'var(--md-on-secondary-container)'
-              }}
-              onMouseLeave={e => {
-                ;(e.currentTarget as HTMLAnchorElement).style.background = 'var(--md-primary-container)'
-                ;(e.currentTarget as HTMLAnchorElement).style.color = 'var(--md-on-primary-container)'
-              }}
+              className="plant-tag-chip text-[11px] font-medium px-2.5 py-1 rounded-full"
             >
               {plant.common_name}
             </Link>
           ))}
         </div>
       )}
-    </a>
+    </div>
   )
 }
 
-// ── Loading skeleton (shown while Suspense resolves) ──────────────────────────
+// ── Loading skeleton ──────────────────────────────────────────────────────────
 function NewsLoadingSkeleton() {
   return (
     <div className="space-y-3" aria-label="Loading news…" role="status">
-      {/* Spinner + message */}
       <div className="flex items-center gap-3 px-4 py-4">
         <svg
           className="w-5 h-5 animate-spin shrink-0"
@@ -198,15 +168,11 @@ function NewsLoadingSkeleton() {
         </p>
       </div>
 
-      {/* Skeleton cards */}
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
           className="rounded-[16px] p-4 space-y-2 animate-pulse"
-          style={{
-            background: 'var(--md-surface-container-lowest)',
-            boxShadow: 'var(--md-elevation-1)',
-          }}
+          style={{ background: 'var(--md-surface-container-lowest)', boxShadow: 'var(--md-elevation-1)' }}
         >
           <div className="flex gap-2 items-center">
             <div className="w-6 h-6 rounded-full" style={{ background: 'var(--md-surface-container-high)' }} />
@@ -227,17 +193,17 @@ function NewsLoadingSkeleton() {
   )
 }
 
-// ── Relative time helper (pure server-side — no browser APIs needed) ──────────
-function formatRelativeTime(ms: number): string {
+// ── Pure relative-time helper (no browser APIs — safe in Server Components) ───
+function relativeTime(ms: number): string {
   if (!ms) return ''
-  const diff = Date.now() - ms
+  const diff  = Date.now() - ms
   const mins  = Math.floor(diff / 60_000)
   const hours = Math.floor(diff / 3_600_000)
   const days  = Math.floor(diff / 86_400_000)
-  if (mins < 60)   return `${mins}m ago`
-  if (hours < 24)  return `${hours}h ago`
-  if (days === 1)  return 'Yesterday'
-  if (days < 30)   return `${days}d ago`
-  if (days < 365)  return `${Math.floor(days / 30)}mo ago`
+  if (mins  <  60) return `${mins}m ago`
+  if (hours <  24) return `${hours}h ago`
+  if (days  ===  1) return 'Yesterday'
+  if (days  <  30) return `${days}d ago`
+  if (days  < 365) return `${Math.floor(days / 30)}mo ago`
   return `${Math.floor(days / 365)}y ago`
 }

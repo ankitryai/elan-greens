@@ -140,6 +140,26 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ── News card hover elevation ── */
+.news-card {
+  box-shadow: var(--md-elevation-1);
+  transition: box-shadow 200ms ease;
+}
+.news-card:hover {
+  box-shadow: var(--md-elevation-2);
+}
+
+/* ── Plant tag chip hover ── */
+.plant-tag-chip {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  transition: background 150ms, color 150ms;
+}
+.plant-tag-chip:hover {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+
 /* ── M3 State layer ── */
 .m3-state {
   position: relative;

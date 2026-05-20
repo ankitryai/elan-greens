@@ -75,7 +75,7 @@ async function NewsFeed() {
         <ArticleCard key={`${article.url}-${idx}`} article={article} />
       ))}
       <p className="text-xs text-center pt-3 pb-1" style={{ color: 'var(--md-outline)' }}>
-        Curated positive platforms · refreshed hourly
+        Curated positive platforms · refreshed daily
       </p>
     </div>
   )

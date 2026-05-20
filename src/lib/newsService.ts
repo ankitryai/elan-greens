@@ -152,6 +152,35 @@ async function fetchRSS(
   }
 }
 
+// ── Sentiment helpers ─────────────────────────────────────────────────────────
+// Lightweight keyword-based negativity check — no external API.
+// bodyText is already lowercased in parseRSS so no need to lowercase here.
+
+const NEGATIVE_KEYWORDS = [
+  'dead', 'died', 'death', 'killed', 'kill ',
+  'shut ', 'shut down', 'shutdown',
+  'failure', 'failed', 'malfunction',
+  'crisis', 'disaster', 'emergency',
+  'contaminated', 'contamination', 'polluted', 'pollution',
+  'toxic', 'hazardous',
+  'illegal', 'encroachment', 'encroach',
+  'protest', 'demonstration', 'agitation',
+  'blamed', ' blame ', 'accused',
+  'collapsed', 'collapse',
+  'flooded', 'flood ',
+  'drought',
+  'disease', 'infestation', 'pest ',
+  'destroyed', 'destruction',
+  'damaged', 'damage',
+  'arrested', 'detained',
+  'fire ', 'accident', 'injury', 'injured',
+  'garbage', 'sewage', 'drainage leak',
+]
+
+function isNegative(bodyText: string): boolean {
+  return NEGATIVE_KEYWORDS.some(kw => bodyText.includes(kw))
+}
+
 // ── Scoring helpers ───────────────────────────────────────────────────────────
 
 function recencyScore(pubDateMs: number): number {
@@ -204,7 +233,7 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
     const maxTags      = parseInt(sm.news_max_plant_tags  ?? '3',   10)
     const maxPlants    = parseInt(sm.news_max_plants      ?? '20',  10)
     const maxPerPlant  = parseInt(sm.news_max_per_plant   ?? '2',   10)
-    const maxAgeDays   = parseInt(sm.news_max_age_days    ?? '365', 10)
+    const maxAgeDays   = parseInt(sm.news_max_age_days    ?? '90',  10)
     const cacheSeconds = parseInt(sm.news_cache_hours     ?? '24',  10) * 3600
 
     const domains: string[] =
@@ -301,22 +330,37 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
     const relevant = scored.filter(s => s.plants.length > 0 || s.topicChip !== null)
     relevant.sort((a, b) => b.score - a.score)
 
-    // ── Greedy selection with per-plant cap ───────────────────────────────────
-    const selected: Scored[] = []
-    const plantCounts = new Map<string, number>()
+    // ── Greedy selection — two passes, sentiment cap ──────────────────────────
+    // Pass 1 guarantees plant articles always appear first (Tabebuia problem fix).
+    // Pass 2 fills remaining slots with topic-only articles.
+    // maxNegative = 20% of total (so 2 out of 10 by default) — never more.
 
+    const maxNegative  = Math.max(1, Math.floor(maxArticles / 5))
+    const selected:    Scored[] = []
+    const plantCounts  = new Map<string, number>()
+    let   negCount     = 0
+
+    // Pass 1 — plant articles only
     for (const entry of relevant) {
       if (selected.length >= maxArticles) break
-      if (entry.plants.length > 0) {
-        const primaryId    = entry.plants[0].id
-        const currentCount = plantCounts.get(primaryId) ?? 0
-        if (currentCount >= maxPerPlant) continue
-        selected.push(entry)
-        plantCounts.set(primaryId, currentCount + 1)
-      } else {
-        // Topic-only articles — no per-plant cap, just add
-        selected.push(entry)
-      }
+      if (entry.plants.length === 0) continue
+      const primaryId    = entry.plants[0].id
+      const currentCount = plantCounts.get(primaryId) ?? 0
+      if (currentCount >= maxPerPlant) continue
+      if (isNegative(entry.item.bodyText) && negCount >= maxNegative) continue
+      selected.push(entry)
+      plantCounts.set(primaryId, currentCount + 1)
+      if (isNegative(entry.item.bodyText)) negCount++
+    }
+
+    // Pass 2 — topic-only articles fill remaining slots
+    for (const entry of relevant) {
+      if (selected.length >= maxArticles) break
+      if (entry.plants.length > 0) continue           // already handled in pass 1
+      if (selected.includes(entry)) continue          // safety guard
+      if (isNegative(entry.item.bodyText) && negCount >= maxNegative) continue
+      selected.push(entry)
+      if (isNegative(entry.item.bodyText)) negCount++
     }
 
     // ── Horizontal floor: ensure ≥ 4 distinct plants where possible ──────────
@@ -325,13 +369,19 @@ export async function fetchPlantNews(): Promise<NewsArticle[]> {
       for (const entry of relevant) {
         if (selected.length >= maxArticles) break
         if (selected.includes(entry)) continue
+        if (isNegative(entry.item.bodyText) && negCount >= maxNegative) continue
         const isNew = entry.plants.some(p => !distinctIds.has(p.id))
         if (isNew) {
           selected.push(entry)
           entry.plants.forEach(p => distinctIds.add(p.id))
+          if (isNegative(entry.item.bodyText)) negCount++
         }
       }
     }
+
+    // ── Final sort: newest first ──────────────────────────────────────────────
+    // Selection was score-driven (quality). Display is recency-driven (freshness).
+    selected.sort((a, b) => b.item.pubDateMs - a.item.pubDateMs)
 
     return selected.map(({ item, plants: ps, geoTag, topicChip }) => ({
       title:        item.title,

@@ -10,10 +10,11 @@ import Link from 'next/link'
 import { fetchPlantNews } from '@/lib/newsService'
 import type { NewsArticle } from '@/lib/newsService'
 
-// 24 h server-side page cache — plant news doesn't change more frequently.
-// The RSS fetch() calls inside newsService use the `news_cache_hours` setting
-// (also defaults to 24 h) so both layers are aligned.
-export const revalidate = 86400
+// force-dynamic — defers all DB + RSS fetch calls to runtime (avoids Vercel
+// build crash when env vars are absent at build time).
+// The RSS fetch() calls inside newsService carry their own `next: { revalidate }`
+// headers so responses are still cached at the fetch layer for 24 h.
+export const dynamic = 'force-dynamic'
 
 // ── Page shell ────────────────────────────────────────────────────────────────
 export default function NewsPage() {
@@ -133,7 +134,7 @@ function ArticleCard({ article }: { article: NewsArticle }) {
       </a>
 
       {/* Plant tags — separate links, NOT nested inside the headline <a> */}
-      {article.plants.length > 0 && (
+      {article.plants.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {article.plants.map(plant => (
             <Link
@@ -145,7 +146,15 @@ function ArticleCard({ article }: { article: NewsArticle }) {
             </Link>
           ))}
         </div>
-      )}
+      ) : article.topicChip ? (
+        <span
+          className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full"
+          style={{ background: 'var(--md-secondary-container)', color: 'var(--md-on-secondary-container)' }}
+        >
+          <span aria-hidden>{article.topicChip.icon}</span>
+          {article.topicChip.label}
+        </span>
+      ) : null}
     </div>
   )
 }

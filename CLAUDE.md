@@ -252,3 +252,7 @@ Always run migrations in order. Check if the table already exists before re-runn
 11. **Topic query articles vs plant articles** — when the same article appears in both a plant-batch result and a topic-query result (same guid), always keep the plant-batch version (topicChip = null). Plant chips take priority in the UI. The dedup logic in `newsService.ts` handles this automatically.
 
 12. **`git add` with `[id]` in path** — shell glob expansion breaks `git add src/app/plants/[id]/page.tsx`. Use `git add -A` or quote the path when adding files with bracket notation in their name.
+
+13. **Vercel env var values can silently be wrong.** Always verify the VALUE prefix when checking env vars in the Vercel dashboard — not just that the key name exists. A wrong key type (e.g. a Stripe `sk_live_...` value in a Supabase field) causes silent failures with no obvious error message. Supabase JWT keys start with `eyJ`.
+
+14. **New device setup checklist.** When moving to a new Mac: install Homebrew first (`/bin/bash -c "$(curl -fsSL ...)"`) → add to PATH (`eval "$(/opt/homebrew/bin/brew shellenv zsh)"`) → `brew install node gh` → `gh auth login` → `gh repo clone ankitryai/elan-greens` → `npm install` → create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (copy values from Vercel dashboard → Settings → Environment Variables). Always dev with `NODE_TLS_REJECT_UNAUTHORIZED=0 npm run dev`.

@@ -20,6 +20,13 @@ const CATEGORY_TONES: Record<PlantCategory, { bg: string; text: string }> = {
   Grass:   { bg: '#FFF9C4', text: '#F57F17' },
 }
 
+/* Tonal colours for each regional-language match hint pill */
+const HINT_COLORS: Record<string, { bg: string; text: string }> = {
+  Hindi:   { bg: '#FFF3E0', text: '#BF360C' },
+  Kannada: { bg: '#E0F2F1', text: '#004D40' },
+  Tamil:   { bg: '#FCE4EC', text: '#880E4F' },
+}
+
 /* SVG checkmark for active filter chips */
 function Checkmark() {
   return (
@@ -40,6 +47,9 @@ function SearchIcon() {
   )
 }
 
+/* Leaf placeholder icon */
+const LEAF_PATH = "M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 2-8 2 1.83-1.37 3.66-2.58 5-3a6.43 6.43 0 00-5.11 1.11C12.26 4.67 11.2 7 11.2 7c-.54-.42-.93-.94-1.2-1.5C8.69 8.5 8.5 11 8.5 11c-1.29-1.5-1.5-3.5-1.5-3.5C5.5 10 5.5 13 6.5 15c.35.7.84 1.37 1.5 1.96"
+
 export default function PlantGrid({
   plants,
   instanceCounts,
@@ -52,7 +62,7 @@ export default function PlantGrid({
   const [sort, setSort] = useState<'updated' | 'name'>('updated')
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase()
+    const q = search.toLowerCase().trim()
     const results = plants.filter(p => {
       const matchesSearch =
         !q ||
@@ -73,6 +83,19 @@ export default function PlantGrid({
     return results
   }, [plants, search, activeCategory, sort])
 
+  // Returns which non-obvious field caused the match so the card can explain it.
+  // Returns null when common/botanical name already makes the result self-evident.
+  function getMatchHint(p: PlantSpecies): { lang: string; name: string } | null {
+    const q = search.toLowerCase().trim()
+    if (!q) return null
+    if (p.common_name.toLowerCase().includes(q)) return null
+    if (p.botanical_name?.toLowerCase().includes(q)) return null
+    if (p.hindi_name?.toLowerCase().includes(q))   return { lang: 'Hindi',   name: p.hindi_name! }
+    if (p.kannada_name?.toLowerCase().includes(q)) return { lang: 'Kannada', name: p.kannada_name! }
+    if (p.tamil_name?.toLowerCase().includes(q))   return { lang: 'Tamil',   name: p.tamil_name! }
+    return null
+  }
+
   return (
     <div className="space-y-4">
 
@@ -88,7 +111,7 @@ export default function PlantGrid({
         <SearchIcon />
         <input
           type="search"
-          placeholder="Search plants…"
+          placeholder="English · Hindi · Kannada · Tamil…"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--md-on-surface-variant)]"
@@ -179,102 +202,15 @@ export default function PlantGrid({
 
       {/* ── M3 Elevated Card Grid ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {filtered.map(plant => {
-          const tone = CATEGORY_TONES[plant.category]
-          return (
-            <Link key={plant.id} href={`/plants/${plant.id}`} className="group outline-none">
-              <div
-                className="rounded-xl overflow-hidden transition-all duration-200 h-full flex flex-col"
-                style={{
-                  background: 'var(--md-surface-container-lowest)',
-                  boxShadow: 'var(--md-elevation-1)',
-                }}
-                /* Elevation lift on hover via inline style + group class */
-                onMouseEnter={e => {
-                  ;(e.currentTarget as HTMLDivElement).style.boxShadow =
-                    'var(--md-elevation-3)'
-                }}
-                onMouseLeave={e => {
-                  ;(e.currentTarget as HTMLDivElement).style.boxShadow =
-                    'var(--md-elevation-1)'
-                }}
-              >
-                {/* Thumbnail */}
-                <div
-                  className="aspect-[4/3] relative overflow-hidden"
-                  style={{ background: 'var(--md-surface-container-high)' }}
-                >
-                  {plant.img_main_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={plant.img_main_url}
-                      alt={plant.common_name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center"
-                      style={{ color: 'var(--md-outline-variant)' }}
-                    >
-                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10" aria-hidden>
-                        <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 2-8 2 1.83-1.37 3.66-2.58 5-3a6.43 6.43 0 00-5.11 1.11C12.26 4.67 11.2 7 11.2 7c-.54-.42-.93-.94-1.2-1.5C8.69 8.5 8.5 11 8.5 11c-1.29-1.5-1.5-3.5-1.5-3.5C5.5 10 5.5 13 6.5 15c.35.7.84 1.37 1.5 1.96"/>
-                      </svg>
-                    </div>
-                  )}
-                  {plant.tentative && (
-                    <span
-                      className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{
-                        background: '#FFF3CD',
-                        color: '#7D5A00',
-                      }}
-                    >
-                      TENTATIVE
-                    </span>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
-                  <div>
-                    <p
-                      className="text-sm font-semibold leading-tight line-clamp-1"
-                      style={{ color: 'var(--md-on-surface)' }}
-                    >
-                      {plant.common_name}
-                    </p>
-                    {plant.botanical_name && (
-                      <p
-                        className="text-xs italic mt-0.5 line-clamp-1"
-                        style={{ color: 'var(--md-on-surface-variant)' }}
-                      >
-                        {plant.botanical_name}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      style={{ background: tone.bg, color: tone.text }}
-                    >
-                      {plant.category}
-                    </span>
-                    {(instanceCounts[plant.id] ?? 0) > 0 && (
-                      <span
-                        className="text-[10px]"
-                        style={{ color: 'var(--md-outline)' }}
-                      >
-                        {instanceCounts[plant.id]}{' '}
-                        {instanceCounts[plant.id] === 1 ? 'location' : 'locations'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          )
-        })}
+        {filtered.map(plant => (
+          <Link key={plant.id} href={`/plants/${plant.id}`} className="group outline-none">
+            <PlantCard
+              plant={plant}
+              instanceCount={instanceCounts[plant.id] ?? 0}
+              matchHint={getMatchHint(plant)}
+            />
+          </Link>
+        ))}
       </div>
 
       {filtered.length === 0 && (
@@ -285,7 +221,7 @@ export default function PlantGrid({
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8" aria-hidden
               style={{ color: 'var(--md-outline-variant)' }}>
-              <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 2-8 2 1.83-1.37 3.66-2.58 5-3a6.43 6.43 0 00-5.11 1.11C12.26 4.67 11.2 7 11.2 7c-.54-.42-.93-.94-1.2-1.5C8.69 8.5 8.5 11 8.5 11c-1.29-1.5-1.5-3.5-1.5-3.5C5.5 10 5.5 13 6.5 15c.35.7.84 1.37 1.5 1.96"/>
+              <path d={LEAF_PATH} />
             </svg>
           </div>
           <p className="text-sm font-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
@@ -293,6 +229,99 @@ export default function PlantGrid({
           </p>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── PlantCard — single grid tile ─────────────────────────────────────────────
+
+function PlantCard({
+  plant,
+  instanceCount,
+  matchHint,
+}: {
+  plant: PlantSpecies
+  instanceCount: number
+  matchHint: { lang: string; name: string } | null
+}) {
+  const tone = CATEGORY_TONES[plant.category]
+  const hintStyle = matchHint ? HINT_COLORS[matchHint.lang] : null
+
+  return (
+    <div
+      className="rounded-xl overflow-hidden transition-all duration-200 h-full flex flex-col"
+      style={{
+        background: 'var(--md-surface-container-lowest)',
+        boxShadow: 'var(--md-elevation-1)',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--md-elevation-3)' }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--md-elevation-1)' }}
+    >
+      {/* Thumbnail */}
+      <div
+        className="aspect-[4/3] relative overflow-hidden"
+        style={{ background: 'var(--md-surface-container-high)' }}
+      >
+        {plant.img_main_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={plant.img_main_url}
+            alt={plant.common_name}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--md-outline-variant)' }}>
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10" aria-hidden>
+              <path d={LEAF_PATH} />
+            </svg>
+          </div>
+        )}
+        {plant.tentative && (
+          <span
+            className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: '#FFF3CD', color: '#7D5A00' }}
+          >
+            TENTATIVE
+          </span>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
+        <div>
+          <p className="text-sm font-semibold leading-tight line-clamp-1" style={{ color: 'var(--md-on-surface)' }}>
+            {plant.common_name}
+          </p>
+          {plant.botanical_name && (
+            <p className="text-xs italic mt-0.5 line-clamp-1" style={{ color: 'var(--md-on-surface-variant)' }}>
+              {plant.botanical_name}
+            </p>
+          )}
+          {/* Match hint — coloured pill showing which regional name triggered this result */}
+          {matchHint && hintStyle && (
+            <span
+              className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
+              style={{ background: hintStyle.bg, color: hintStyle.text }}
+            >
+              {matchHint.lang}: {matchHint.name}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: tone.bg, color: tone.text }}
+          >
+            {plant.category}
+          </span>
+          {instanceCount > 0 && (
+            <span className="text-[10px]" style={{ color: 'var(--md-outline)' }}>
+              {instanceCount} {instanceCount === 1 ? 'location' : 'locations'}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

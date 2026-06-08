@@ -2,7 +2,7 @@
 // Client component — search, filter, and sort state lives in the browser.
 // All plant data is passed in as a prop from the server-rendered page.tsx.
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import type { PlantSpecies, PlantCategory } from '@/types'
 
@@ -25,6 +25,7 @@ const HINT_COLORS: Record<string, { bg: string; text: string }> = {
   Hindi:   { bg: '#FFF3E0', text: '#BF360C' },
   Kannada: { bg: '#E0F2F1', text: '#004D40' },
   Tamil:   { bg: '#FCE4EC', text: '#880E4F' },
+  Tag:     { bg: '#EDE9FE', text: '#4C1D95' },
 }
 
 /* SVG checkmark for active filter chips */
@@ -60,6 +61,32 @@ export default function PlantGrid({
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState<PlantCategory | 'All'>('All')
   const [sort, setSort] = useState<'updated' | 'name'>('updated')
+  const [showTip, setShowTip] = useState(() =>
+    typeof window === 'undefined' ? true : localStorage.getItem('elan-search-tip-dismissed') !== '1'
+  )
+  const [listening, setListening] = useState(false)
+  const [hasSpeech, setHasSpeech] = useState(false)
+
+  useEffect(() => {
+    setHasSpeech('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+  }, [])
+
+  function startVoice() {
+    type SREvent = { results: { [i: number]: { [i: number]: { transcript: string } } } }
+    type SRInstance = { lang: string; interimResults: boolean; maxAlternatives: number; onstart: (() => void) | null; onend: (() => void) | null; onresult: ((e: SREvent) => void) | null; start: () => void }
+    type SRCtor = { new(): SRInstance }
+    const w = window as Window & { SpeechRecognition?: SRCtor; webkitSpeechRecognition?: SRCtor }
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition
+    if (!SR) return
+    const r = new SR()
+    r.lang = 'en-IN'
+    r.interimResults = false
+    r.maxAlternatives = 1
+    r.onstart = () => setListening(true)
+    r.onend   = () => setListening(false)
+    r.onresult = (e) => setSearch(e.results[0][0].transcript)
+    r.start()
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -70,7 +97,8 @@ export default function PlantGrid({
         (p.botanical_name?.toLowerCase().includes(q) ?? false) ||
         (p.hindi_name?.toLowerCase().includes(q) ?? false) ||
         (p.kannada_name?.toLowerCase().includes(q) ?? false) ||
-        (p.tamil_name?.toLowerCase().includes(q) ?? false)
+        (p.tamil_name?.toLowerCase().includes(q) ?? false) ||
+        (p.search_tags?.toLowerCase().includes(q) ?? false)
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory
       return matchesSearch && matchesCategory
     })
@@ -93,6 +121,10 @@ export default function PlantGrid({
     if (p.hindi_name?.toLowerCase().includes(q))   return { lang: 'Hindi',   name: p.hindi_name! }
     if (p.kannada_name?.toLowerCase().includes(q)) return { lang: 'Kannada', name: p.kannada_name! }
     if (p.tamil_name?.toLowerCase().includes(q))   return { lang: 'Tamil',   name: p.tamil_name! }
+    if (p.search_tags?.toLowerCase().includes(q)) {
+      const matchedTag = p.search_tags.split('|').find(t => t.toLowerCase().includes(q))
+      return matchedTag ? { lang: 'Tag', name: matchedTag } : null
+    }
     return null
   }
 
@@ -117,6 +149,23 @@ export default function PlantGrid({
           className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--md-on-surface-variant)]"
           style={{ color: 'var(--md-on-surface)' }}
         />
+        {hasSpeech && (
+          <button
+            type="button"
+            onClick={startVoice}
+            title="Voice search (Indian English)"
+            className="shrink-0 transition-opacity"
+            style={{
+              color: listening ? '#D32F2F' : 'var(--md-on-surface-variant)',
+              opacity: listening ? 1 : 0.6,
+            }}
+            aria-label="Voice search"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden>
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z"/>
+            </svg>
+          </button>
+        )}
         {search && (
           <button
             onClick={() => setSearch('')}
@@ -130,6 +179,19 @@ export default function PlantGrid({
           </button>
         )}
       </div>
+
+      {/* Search tip — shown when search bar is empty, dismissible */}
+      {!search && showTip && (
+        <p className="text-xs px-1" style={{ color: 'var(--md-on-surface-variant)' }}>
+          💡 Try: &ldquo;white flowers&rdquo;, &ldquo;yellow&rdquo;, &ldquo;climbing vine&rdquo; · Hindi, Kannada, Tamil names work too
+          <button
+            onClick={() => { setShowTip(false); if (typeof window !== 'undefined') localStorage.setItem('elan-search-tip-dismissed', '1') }}
+            className="ml-2 opacity-50 hover:opacity-100 text-[11px]"
+          >
+            ✕
+          </button>
+        </p>
+      )}
 
       {/* ── M3 Filter Chips ── */}
       <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">

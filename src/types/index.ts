@@ -39,6 +39,7 @@ export interface PlantSpecies {
   propagation_methods: string | null   // pipe-separated e.g. "Seeds|Stem cuttings"
   habitat_type: string | null          // e.g. "Tropical dry forest, scrublands"
   not_applicable_parts: string | null
+  search_tags: string | null
   tentative: boolean
   active: boolean
   img_main_url: string | null

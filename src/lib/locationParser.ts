@@ -48,12 +48,17 @@ const GATE_COORDS = {
 }
 
 const AMENITY_COORDS = {
-  pool:      { lat: 12.91771108038718, lng: 77.6737209744996, name: 'Swimming Pool'  },
-  badminton: { lat: 12.91737094099992, lng: 77.6735332198749, name: 'Badminton Court' },
-  cricket:   { lat: 12.91763629551157, lng: 77.6730517633802, name: 'Cricket Area'   },
-  clubhouse: { lat: 12.91795066836152, lng: 77.6735506542425, name: 'Clubhouse'      },
-  grocery:   { lat: 12.91773367924865, lng: 77.6734393425718, name: 'Grocery Store'  },
-  helperswc: { lat: 12.91703499917045, lng: 77.6740334518334, name: "Helper's WC"   },
+  pool:       { lat: 12.91771108038718,  lng: 77.6737209744996,  name: 'Swimming Pool'       },
+  badminton:  { lat: 12.91737094099992,  lng: 77.6735332198749,  name: 'Badminton Court'      },
+  cricket:    { lat: 12.91763629551157,  lng: 77.6730517633802,  name: 'Cricket Area'         },
+  clubhouse:  { lat: 12.91795066836152,  lng: 77.6735506542425,  name: 'Clubhouse'            },
+  grocery:    { lat: 12.91773367924865,  lng: 77.6734393425718,  name: 'Grocery Store'        },
+  helperswc:  { lat: 12.91703499917045,  lng: 77.6740334518334,  name: "Helper's WC"          },
+  genset:     { lat: 12.917548061905524, lng: 77.6743432469792,  name: 'Genset Cage'          },
+  stp:        { lat: 12.917033038420447, lng: 77.67396371442065, name: 'STP'                  },
+  ramp1f:     { lat: 12.917383359083345, lng: 77.67417963222587, name: 'Block 1F Parking Ramp'},
+  ramp2a:     { lat: 12.917321922288737, lng: 77.67333607752764, name: 'Block 2A Parking Ramp'},
+  bikeparking:{ lat: 12.917814396612606, lng: 77.67245228966084, name: 'Workers Bike Parking' },
 }
 
 // ── Block number → letter mapping ─────────────────────────────────────────────
@@ -155,12 +160,22 @@ export function parseLocationFromIF(raw: string): ApproxLocation | null {
 
   // ── 6. Amenities ───────────────────────────────────────────────────────────
   const amenityRules: [string | RegExp, keyof typeof AMENITY_COORDS, number, string][] = [
-    [/swimming\s*pool|pool\s*area|\bpool\b/, 'pool',      0.92, 'swimming pool'],
-    [/badminton|indoor\s*court/,             'badminton', 0.92, 'badminton court'],
-    [/cricket|net\s*area|cricket\s*ground/,  'cricket',   0.92, 'cricket area'],
-    [/club\s*house|clubhouse/,               'clubhouse', 0.92, 'clubhouse'],
-    [/grocery|grocery\s*store/,              'grocery',   0.91, 'grocery store'],
-    [/helper.*toilet|helper.*wc|wc.*outer/,  'helperswc', 0.88, "helper's WC"],
+    [/swimming\s*pool|pool\s*area|\bpool\b/,             'pool',        0.92, 'swimming pool'       ],
+    [/badminton|indoor\s*court/,                         'badminton',   0.92, 'badminton court'     ],
+    [/cricket|net\s*area|cricket\s*ground|netted\s*(sports?|area)/, 'cricket', 0.92, 'cricket area'],
+    [/club\s*house|clubhouse/,                           'clubhouse',   0.92, 'clubhouse'           ],
+    [/grocery|grocery\s*store/,                          'grocery',     0.91, 'grocery store'       ],
+    [/helper.*toilet|helper.*wc|wc.*outer|guard.*toilet/,'helperswc',   0.88, "helper's WC"         ],
+    [/gen\s*set|genset|\bgenerator\b/,                   'genset',      0.93, 'genset cage'         ],
+    [/\bstp\b|sewage.*plant|treatment.*plant/,           'stp',         0.93, 'STP'                 ],
+    // Ramp disambiguation: check block context before adding ramp candidate
+    ...((/1f|raxton|block\s*f\b|\bf\s*block/).test(t) && /ramp|basement.*exit|exit.*ramp/.test(t)
+        ? [[/ramp|basement.*exit|exit.*ramp/, 'ramp1f', 0.91, '1F parking ramp']] as [RegExp, keyof typeof AMENITY_COORDS, number, string][]
+        : []),
+    ...((/2a|sanster/).test(t) && /ramp|basement.*exit|exit.*ramp/.test(t)
+        ? [[/ramp|basement.*exit|exit.*ramp/, 'ramp2a', 0.91, '2A parking ramp']] as [RegExp, keyof typeof AMENITY_COORDS, number, string][]
+        : []),
+    [/bike\s*parking|workers.*parking|worker.*bike/,     'bikeparking', 0.91, 'bike parking'        ],
   ]
   for (const [pattern, key, conf, label] of amenityRules) {
     const re = typeof pattern === 'string' ? new RegExp(pattern) : pattern

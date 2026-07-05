@@ -27,12 +27,17 @@ const GATES = [
 ]
 
 const AMENITIES = [
-  { name: 'Badminton',   icon: '🏸', lat: 12.91737094099992, lng: 77.6735332198749 },
-  { name: 'Pool',        icon: '🏊', lat: 12.91771108038718, lng: 77.6737209744996 },
-  { name: 'Cricket',     icon: '🏏', lat: 12.91763629551157, lng: 77.6730517633802 },
-  { name: 'Clubhouse',   icon: '🏠', lat: 12.91795066836152, lng: 77.6735506542425 },
-  { name: 'Grocery',     icon: '🛒', lat: 12.91773367924865, lng: 77.6734393425718 },
-  { name: "Helper's WC", icon: '🚻', lat: 12.91703499917045, lng: 77.6740334518334 },
+  { name: 'Badminton',        icon: '🏸', lat: 12.91737094099992,  lng: 77.6735332198749  },
+  { name: 'Pool',             icon: '🏊', lat: 12.91771108038718,  lng: 77.6737209744996  },
+  { name: 'Cricket',          icon: '🏏', lat: 12.91763629551157,  lng: 77.6730517633802  },
+  { name: 'Clubhouse',        icon: '🏠', lat: 12.91795066836152,  lng: 77.6735506542425  },
+  { name: 'Grocery',          icon: '🛒', lat: 12.91773367924865,  lng: 77.6734393425718  },
+  { name: "Helper's WC",      icon: '🚻', lat: 12.91703499917045,  lng: 77.6740334518334  },
+  { name: 'Genset Cage',      icon: '⚡', lat: 12.917548061905524, lng: 77.6743432469792  },
+  { name: 'STP',              icon: '💧', lat: 12.917033038420447, lng: 77.67396371442065 },
+  { name: '1F Parking Ramp',  icon: '🚗', lat: 12.917383359083345, lng: 77.67417963222587 },
+  { name: '2A Parking Ramp',  icon: '🚗', lat: 12.917321922288737, lng: 77.67333607752764 },
+  { name: 'Bike Parking',     icon: '🏍', lat: 12.917814396612606, lng: 77.67245228966084 },
 ]
 
 // ── Confidence → colour ────────────────────────────────────────────────────────

@@ -1,24 +1,16 @@
 // Parses Elan Greens landmark mentions out of plant interesting_fact (IF) text.
-// Pure function — no API calls, no imports. Runs server-side in map/page.tsx.
+// Pure function — no API calls. Runs server-side in map/page.tsx.
 //
 // Scoring model:
 //   Block name (Caldra, Sesna…)        → 0.93  (most specific)
 //   Full block number (1A, Block 1A)   → 0.90
-//   Block + circle type (outer/inner)  → 0.88  (entry coords used)
+//   Block + circle type (outer/inner)  → uses entry coords
 //   Single unique letter (B C D…)      → 0.78
 //   Single ambiguous "A"               → 0.62  (could be 1A or 2A)
 //   Amenity name (pool, badminton…)    → 0.92
 //   Gate name (entry gate, back gate…) → 0.91
-//   Generic circle ref only            → 0.35  (too vague, skipped)
 
-export interface ApproxLocation {
-  landmarkName: string
-  lat: number
-  lng: number
-  confidence: number     // 0–1
-  matchedKeyword: string // the phrase that caused the match (for popup display)
-  locationType: 'block_centroid' | 'block_outer_entry' | 'block_inner_entry' | 'gate' | 'amenity'
-}
+import type { ApproxLocation } from '@/types'
 
 // ── Full coordinate dataset ────────────────────────────────────────────────────
 
@@ -187,13 +179,16 @@ export function parseLocationFromIF(raw: string): ApproxLocation | null {
   // ── 7. Gates ───────────────────────────────────────────────────────────────
   // Use negative lookbehind to skip "block entry gates" (block entrances ≠ the main Entry Gate landmark)
   if (/main\s*gate|main\s*entry\s*gate|entrance\s*gate|(?<!block\s{0,15})entry\s*gate(?!\s*s\b)/.test(t)) {
-    candidates.push({ ...GATE_COORDS.entry, confidence: 0.91, matchedKeyword: 'entry gate', locationType: 'gate' })
+    const g = GATE_COORDS.entry
+    candidates.push({ landmarkName: g.name, lat: g.lat, lng: g.lng, confidence: 0.91, matchedKeyword: 'entry gate', locationType: 'gate' })
   }
   if (/exit\s*gate/.test(t)) {
-    candidates.push({ ...GATE_COORDS.exit, confidence: 0.91, matchedKeyword: 'exit gate', locationType: 'gate' })
+    const g = GATE_COORDS.exit
+    candidates.push({ landmarkName: g.name, lat: g.lat, lng: g.lng, confidence: 0.91, matchedKeyword: 'exit gate', locationType: 'gate' })
   }
   if (/back\s*gate|rear\s*gate/.test(t)) {
-    candidates.push({ ...GATE_COORDS.back, confidence: 0.91, matchedKeyword: 'back gate', locationType: 'gate' })
+    const g = GATE_COORDS.back
+    candidates.push({ landmarkName: g.name, lat: g.lat, lng: g.lng, confidence: 0.91, matchedKeyword: 'back gate', locationType: 'gate' })
   }
 
   if (candidates.length === 0) return null

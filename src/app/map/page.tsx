@@ -3,16 +3,10 @@
 
 import { getAllSpecies, getAllInstances } from '@/lib/queries'
 import { parseLocationFromIF }           from '@/lib/locationParser'
-import type { PlantInstance, PlantSpecies } from '@/types'
-import type { ApproxLocation }           from '@/lib/locationParser'
+import type { PlantInstance, PlantSpecies, ApproxPin } from '@/types'
 import MapClient                          from '@/components/MapClient'
 
 export const dynamic = 'force-dynamic'
-
-export interface ApproxPin {
-  species:     PlantSpecies
-  location:    ApproxLocation
-}
 
 export default async function MapPage() {
   const [species, instances] = await Promise.all([getAllSpecies(), getAllInstances()])

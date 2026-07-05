@@ -74,6 +74,21 @@ export interface PlantInstance {
   deleted_at: string | null
 }
 
+// Approximate map pin derived by parsing interesting_fact text
+export interface ApproxLocation {
+  landmarkName: string
+  lat: number
+  lng: number
+  confidence: number
+  matchedKeyword: string
+  locationType: 'block_centroid' | 'block_outer_entry' | 'block_inner_entry' | 'gate' | 'amenity'
+}
+
+export interface ApproxPin {
+  species: PlantSpecies
+  location: ApproxLocation
+}
+
 export interface StaffMember {
   id: string
   staff_id: string

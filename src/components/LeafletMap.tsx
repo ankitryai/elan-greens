@@ -3,8 +3,7 @@
 // Dynamic import with ssr:false in MapClient.tsx prevents SSR attempts.
 
 import { useEffect, useRef } from 'react'
-import type { PlantInstance, PlantSpecies } from '@/types'
-import type { ApproxPin }                  from '@/app/map/page'
+import type { PlantInstance, PlantSpecies, ApproxPin } from '@/types'
 
 interface ExactPin { instance: PlantInstance; species: PlantSpecies }
 

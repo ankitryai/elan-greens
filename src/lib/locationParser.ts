@@ -185,7 +185,8 @@ export function parseLocationFromIF(raw: string): ApproxLocation | null {
   }
 
   // ── 7. Gates ───────────────────────────────────────────────────────────────
-  if (/entry\s*gate|main\s*gate|entrance\s*gate/.test(t)) {
+  // Use negative lookbehind to skip "block entry gates" (block entrances ≠ the main Entry Gate landmark)
+  if (/main\s*gate|main\s*entry\s*gate|entrance\s*gate|(?<!block\s{0,15})entry\s*gate(?!\s*s\b)/.test(t)) {
     candidates.push({ ...GATE_COORDS.entry, confidence: 0.91, matchedKeyword: 'entry gate', locationType: 'gate' })
   }
   if (/exit\s*gate/.test(t)) {

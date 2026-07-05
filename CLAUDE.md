@@ -162,6 +162,9 @@ Server Components **cannot** use `onMouseEnter`/`onMouseLeave`. Use CSS classes 
 ### Leaflet map
 `/app/map/page.tsx` is a Server Component that fetches data and passes pins to `<MapClient>`. `MapClient.tsx` is a `'use client'` wrapper that does `dynamic(() => import('@/components/LeafletMap'), { ssr: false })`. `LeafletMap.tsx` is also `'use client'` and imports Leaflet inside `useEffect`. This two-layer pattern is required because `ssr: false` is not allowed in Server Components in Next.js 16.
 
+**Custom block labels (pending implementation):**
+OSM tiles cannot be edited in the app — add a hardcoded config overlay instead. In `LeafletMap.tsx`, define `BLOCK_LABELS` (name + centroid lat/lng) and `KEY_LOCATIONS` (gate, clubhouse etc.) arrays. Render each as a `L.divIcon` marker so the labels float above the OSM tiles. This is purely additive — OSM data is never touched. Coordinate lookup: open the map in any OSM editor or use Google Maps right-click → "What's here?" to get the lat/lng for each block centroid. Once coordinates are collected, pass them to the component and rendered via `L.marker(latlng, { icon: L.divIcon({ html, className }) })`.
+
 ### Plant detail page
 `/app/plants/[id]/page.tsx` — sub-images are accessed dynamically via `species as unknown as Record<string, string | null>` to avoid TypeScript errors on the 20 image columns. `not_applicable_parts` is a pipe-separated field — use `splitPipe()` to parse before checking which image sections to hide.
 
@@ -256,3 +259,13 @@ Always run migrations in order. Check if the table already exists before re-runn
 13. **Vercel env var values can silently be wrong.** Always verify the VALUE prefix when checking env vars in the Vercel dashboard — not just that the key name exists. A wrong key type (e.g. a Stripe `sk_live_...` value in a Supabase field) causes silent failures with no obvious error message. Supabase JWT keys start with `eyJ`.
 
 14. **New device setup checklist.** When moving to a new Mac: install Homebrew first (`/bin/bash -c "$(curl -fsSL ...)"`) → add to PATH (`eval "$(/opt/homebrew/bin/brew shellenv zsh)"`) → `brew install node gh` → `gh auth login` → `gh repo clone ankitryai/elan-greens` → `npm install` → create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (copy values from Vercel dashboard → Settings → Environment Variables). Always dev with `NODE_TLS_REJECT_UNAUTHORIZED=0 npm run dev`.
+
+15. **`PlantGrid` search covers five fields.** `common_name`, `botanical_name`, `hindi_name`, `kannada_name`, `tamil_name` plus `search_tags` (pipe-separated Vision tags). The `getMatchHint()` helper returns which non-obvious field matched so a coloured pill can explain the result. `HINT_COLORS` is the record keyed by `'Hindi' | 'Kannada' | 'Tamil' | 'Tag'`. When the matched field is `common_name` or `botanical_name`, `getMatchHint()` returns `null` (self-evident, no pill needed).
+
+16. **Voice search in PlantGrid uses Web Speech API, `en-IN` locale, zero cost.** The mic button only renders when `hasSpeech === true` (checked in `useEffect` — never on server). Transcribed text flows directly into the `search` state. No external API; works offline in Chrome and Safari. `SpeechRecognition` is prefixed as `webkitSpeechRecognition` on Safari.
+
+17. **Search tip tooltip is dismissible and persisted.** A one-time tooltip on the search bar hints at language search, tag search, and voice search. Dismissed state stored in `localStorage` as `elan-search-tip-dismissed: '1'`. Dismiss on click or on first successful search.
+
+18. **`search_tags` are pre-computed by Vision, never at query time.** The public app does plain `String.prototype.includes()` on `plant_species.search_tags`. No API call needed. Tags cover visual properties (colour, texture, shape) from Vision `LABEL_DETECTION` + `IMAGE_PROPERTIES`. If a plant has no tags yet, it simply won't match colour-based searches until the admin backfills.
+
+19. **Map block labels — custom `L.divIcon` overlay, not OSM edits.** The apartment block names on the OSM basemap are wrong/absent. Do not edit OSM. Instead, define `BLOCK_LABELS` and `KEY_LOCATIONS` arrays in `LeafletMap.tsx` with corrected names and centroid lat/lng values (obtained from Google Maps right-click). Render as Leaflet `divIcon` markers that float above the tiles. This is purely additive and survives OSM tile updates.

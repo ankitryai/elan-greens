@@ -89,6 +89,10 @@ export default async function MapPage() {
           {total > 0 && ' · tap a pin for details'}
         </p>
       </div>
+      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+        📍 Landmark pins show the <strong>approximate area</strong> where a plant grows — not its exact spot.
+        Use the landmark as a starting point, then enjoy the fun of discovering it nearby!
+      </p>
       <MapClient pins={exactPins} approxPins={approxPins} landmarks={landmarks} />
     </div>
   )

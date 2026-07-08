@@ -3,7 +3,7 @@
 // imports to be inside a Client Component, not a Server Component.
 
 import dynamic from 'next/dynamic'
-import type { PlantInstance, PlantSpecies, ApproxPin } from '@/types'
+import type { PlantInstance, PlantSpecies, ApproxPin, Landmark } from '@/types'
 
 const LeafletMap = dynamic(() => import('@/components/LeafletMap'), {
   ssr: false,
@@ -20,9 +20,11 @@ const LeafletMap = dynamic(() => import('@/components/LeafletMap'), {
 export default function MapClient({
   pins,
   approxPins,
+  landmarks,
 }: {
-  pins: { instance: PlantInstance; species: PlantSpecies }[]
+  pins:       { instance: PlantInstance; species: PlantSpecies }[]
   approxPins: ApproxPin[]
+  landmarks:  Landmark[]
 }) {
-  return <LeafletMap pins={pins} approxPins={approxPins} />
+  return <LeafletMap pins={pins} approxPins={approxPins} landmarks={landmarks} />
 }

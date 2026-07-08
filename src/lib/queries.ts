@@ -2,7 +2,7 @@
 // Uses the anon client — RLS restricts results to active, non-deleted rows only.
 
 import { createPublicClient } from '@/lib/supabase'
-import type { PlantSpecies, PlantInstance, StaffMember, LinkedSpeciesCard } from '@/types'
+import type { PlantSpecies, PlantInstance, StaffMember, LinkedSpeciesCard, Landmark } from '@/types'
 
 export async function getAllSpecies(): Promise<PlantSpecies[]> {
   try {
@@ -107,6 +107,36 @@ export async function getLastUpdated(): Promise<string | null> {
     return timestamps.length ? timestamps.sort().reverse()[0] : null
   } catch {
     return null
+  }
+}
+
+export async function getLandmarks(propertyId = 'elan'): Promise<Landmark[]> {
+  try {
+    const db = createPublicClient()
+    const { data, error } = await db
+      .from('landmarks')
+      .select('*')
+      .eq('property_id', propertyId)
+      .eq('active', true)
+      .order('category')
+      .order('name')
+    if (error) return []
+    return data as Landmark[]
+  } catch {
+    return []
+  }
+}
+
+export async function getPlantLandmarkTags(): Promise<{ species_id: string; landmark_id: string }[]> {
+  try {
+    const db = createPublicClient()
+    const { data, error } = await db
+      .from('plant_landmark_tags')
+      .select('species_id, landmark_id')
+    if (error) return []
+    return data as { species_id: string; landmark_id: string }[]
+  } catch {
+    return []
   }
 }
 

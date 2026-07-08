@@ -3,54 +3,13 @@
 // Dynamic import with ssr:false in MapClient.tsx prevents SSR attempts.
 
 import { useEffect, useRef } from 'react'
-import type { PlantInstance, PlantSpecies, ApproxPin } from '@/types'
+import type { PlantInstance, PlantSpecies, ApproxPin, Landmark } from '@/types'
 
 interface ExactPin { instance: PlantInstance; species: PlantSpecies }
 
-// ── Elan Greens landmark config ───────────────────────────────────────────────
-const BLOCKS = [
-  { label: '1A', sub: 'Caldra',  lat: 12.91783433084684, lng: 77.6726333387974 },
-  { label: '1B', sub: 'Clayton', lat: 12.91823040103564, lng: 77.6728251167359 },
-  { label: '1C', sub: 'Senswe',  lat: 12.91820621854118, lng: 77.6732703634155 },
-  { label: '1D', sub: 'Sesna',   lat: 12.91798400099841, lng: 77.6736767180608 },
-  { label: '1E', sub: 'Pratle',  lat: 12.91766766745733, lng: 77.6740133352728 },
-  { label: '1F', sub: 'Raxton',  lat: 12.91731081136661, lng: 77.6738497205344 },
-  { label: '1G', sub: 'Dyna',    lat: 12.91841928576080, lng: 77.6730973609282 },
-  { label: '1H', sub: '',        lat: 12.91789903541721, lng: 77.6739811487665 },
-  { label: '2A', sub: 'Sanster', lat: 12.91748205006520, lng: 77.6731751449919 },
-]
-
-const GATES = [
-  { name: 'Entry Gate', lat: 12.91749316097813, lng: 77.6727339216401 },
-  { name: 'Exit Gate',  lat: 12.91742910987837, lng: 77.6728532799345 },
-  { name: 'Back Gate',  lat: 12.91859967382031, lng: 77.6729015596631 },
-]
-
-const AMENITIES = [
-  { name: 'Badminton',        icon: '🏸', lat: 12.91737094099992,  lng: 77.6735332198749  },
-  { name: 'Pool',             icon: '🏊', lat: 12.91771108038718,  lng: 77.6737209744996  },
-  { name: 'Cricket',          icon: '🏏', lat: 12.91763629551157,  lng: 77.6730517633802  },
-  { name: 'Clubhouse',        icon: '🏠', lat: 12.91795066836152,  lng: 77.6735506542425  },
-  { name: 'Grocery',          icon: '🛒', lat: 12.91773367924865,  lng: 77.6734393425718  },
-  { name: "Helper's WC",      icon: '🚻', lat: 12.91703499917045,  lng: 77.6740334518334  },
-  { name: 'Genset Cage',        icon: '⚡', lat: 12.917548061905524, lng: 77.6743432469792  },
-  { name: 'STP',                icon: '💧', lat: 12.917033038420447, lng: 77.67396371442065 },
-  { name: '1E Parking Ramp',    icon: '🚗', lat: 12.918103548095322, lng: 77.67404445281441 },
-  { name: '1F Parking Ramp',    icon: '🚗', lat: 12.917383359083345, lng: 77.67417963222587 },
-  { name: '2A Parking Ramp',    icon: '🚗', lat: 12.917321922288737, lng: 77.67333607752764 },
-  { name: 'Bike Parking',       icon: '🏍', lat: 12.917814396612606, lng: 77.67245228966084 },
-  { name: 'EV Charging',        icon: '🔋', lat: 12.917490694834264, lng: 77.6743131313502  },
-  { name: 'Sitting Gazebo',     icon: '⛺', lat: 12.917379930849277, lng: 77.6736874868455  },
-  { name: 'Pool Overflow',      icon: '🌊', lat: 12.917580580710785, lng: 77.67382226784446 },
-  { name: 'Amphitheatre',       icon: '🎭', lat: 12.917940375313487, lng: 77.67322212636206 },
-  { name: 'Guard Dining',       icon: '🍽', lat: 12.917746917361551, lng: 77.67239600324899 },
-  { name: 'Nursery Garden',     icon: '🌱', lat: 12.917812275543776, lng: 77.67449349063475 },
-  { name: 'Open Air Gym',       icon: '🏋', lat: 12.918296579148617, lng: 77.67391279240621 },
-  { name: 'Composting Room',    icon: '♻️', lat: 12.918534482328027, lng: 77.67283588550282 },
-]
-
 // ── Confidence → colour ────────────────────────────────────────────────────────
 function confColor(c: number): { bg: string; border: string; text: string } {
+  if (c >= 1.00) return { bg: 'rgba(200,230,201,0.90)', border: '#2E7D32', text: '#1B5E20' }
   if (c >= 0.88) return { bg: 'rgba(200,230,201,0.85)', border: '#2E7D32', text: '#1B5E20' }
   if (c >= 0.72) return { bg: 'rgba(255,243,224,0.88)', border: '#E65100', text: '#BF360C' }
   return                 { bg: 'rgba(252,228,236,0.88)', border: '#880E4F', text: '#880E4F' }
@@ -70,7 +29,7 @@ const CAT_COLORS: Record<string, { bg: string; border: string }> = {
 
 // ── Icon HTML helpers ──────────────────────────────────────────────────────────
 
-function blockHtml(label: string, sub: string) {
+function blockHtml(label: string, sub: string | null) {
   return `<div style="background:rgba(255,255,255,0.92);border:2px solid #2E7D32;border-radius:8px;padding:3px 7px;text-align:center;line-height:1.2;box-shadow:0 1px 4px rgba(0,0,0,0.18);pointer-events:none">
     <div style="font-weight:700;font-size:13px;color:#1B5E20;font-family:Inter,sans-serif">Block ${label}</div>
     ${sub ? `<div style="font-size:10px;color:#4CAF50;font-family:Inter,sans-serif">${sub}</div>` : ''}
@@ -90,40 +49,45 @@ function exactPinHtml(category: string) {
   return `<div style="width:28px;height:28px;background:${c.bg};border:2px solid ${c.border};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 1px 4px rgba(0,0,0,0.2)">🌿</div>`
 }
 
-// Approximate pin: dashed border circle with confidence % badge
 function approxPinHtml(confidence: number, category: string) {
-  const pct = Math.round(confidence * 100)
   const col = confColor(confidence)
   const cat = CAT_COLORS[category] ?? { bg: '#E8F5E9', border: '#2E7D32' }
+  const isTagged = confidence >= 1.0
+  const badge    = isTagged
+    ? `<div style="position:absolute;top:-6px;right:-8px;background:#2E7D32;color:#fff;font-size:8px;font-weight:700;font-family:Inter,sans-serif;border-radius:8px;padding:1px 4px;white-space:nowrap">📍</div>`
+    : `<div style="position:absolute;top:-6px;right:-8px;background:${col.border};color:#fff;font-size:8px;font-weight:700;font-family:Inter,sans-serif;border-radius:8px;padding:1px 4px;white-space:nowrap">${Math.round(confidence * 100)}%</div>`
   return `
   <div style="position:relative;width:36px;height:36px">
     <div style="
       width:32px;height:32px;
       background:${cat.bg};
-      border:2.5px dashed ${col.border};
+      border:2.5px ${isTagged ? 'solid' : 'dashed'} ${col.border};
       border-radius:50%;
       display:flex;align-items:center;justify-content:center;
       font-size:15px;
       box-shadow:0 1px 3px rgba(0,0,0,0.15);
-      opacity:0.85;
+      opacity:${isTagged ? 1 : 0.85};
     ">🌱</div>
-    <div style="
-      position:absolute;top:-6px;right:-8px;
-      background:${col.border};
-      color:#fff;
-      font-size:8px;font-weight:700;
-      font-family:Inter,sans-serif;
-      border-radius:8px;
-      padding:1px 4px;
-      white-space:nowrap;
-    ">${pct}%</div>
+    ${badge}
   </div>`
+}
+
+// ── Render a landmark as the right marker type ────────────────────────────────
+function landmarkHtml(lm: Landmark): { html: string; anchor: [number, number] } {
+  if (lm.category === 'Block') {
+    const label = lm.name.replace(/^Block\s+/i, '')
+    return { html: blockHtml(label, lm.sub_label), anchor: [40, 18] }
+  }
+  if (lm.category === 'Gate') {
+    return { html: gateHtml(lm.name), anchor: [36, 12] }
+  }
+  return { html: amenityHtml(lm.icon ?? '📍', lm.name), anchor: [36, 12] }
 }
 
 // ── Tiny jitter so multiple plants at same landmark don't fully overlap ────────
 function jitter(val: number, idx: number, total: number): number {
   if (total <= 1) return val
-  const spread = 0.00012  // ~13 m
+  const spread = 0.00012
   const angle  = (idx / total) * 2 * Math.PI
   return val + (idx % 2 === 0 ? Math.cos(angle) : Math.sin(angle)) * spread * (0.5 + (idx % 3) * 0.25)
 }
@@ -133,9 +97,11 @@ function jitter(val: number, idx: number, total: number): number {
 export default function LeafletMap({
   pins,
   approxPins,
+  landmarks,
 }: {
-  pins: ExactPin[]
+  pins:       ExactPin[]
   approxPins: ApproxPin[]
+  landmarks:  Landmark[]
 }) {
   const mapRef         = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<unknown>(null)
@@ -160,30 +126,18 @@ export default function LeafletMap({
         maxZoom: 20,
       }).addTo(map)
 
-      // ── Block labels ────────────────────────────────────────────────────────
-      for (const b of BLOCKS) {
-        L.marker([b.lat, b.lng], {
-          icon: L.divIcon({ html: blockHtml(b.label, b.sub), className: '', iconAnchor: [40, 18] }),
+      // ── Landmark overlay (blocks → gates → all other categories) ───────────
+      const ORDER = ['Block', 'Gate', 'Sports', 'Amenity', 'Infrastructure', 'Green Space']
+      const zIndexMap: Record<string, number> = { Block: 100, Gate: 200 }
+      const sorted = [...landmarks].sort(
+        (a, b) => (ORDER.indexOf(a.category) - ORDER.indexOf(b.category))
+      )
+      for (const lm of sorted) {
+        const { html, anchor } = landmarkHtml(lm)
+        L.marker([lm.lat, lm.lng], {
+          icon: L.divIcon({ html, className: '', iconAnchor: anchor }),
           interactive: false,
-          zIndexOffset: 100,
-        }).addTo(map)
-      }
-
-      // ── Gates ───────────────────────────────────────────────────────────────
-      for (const g of GATES) {
-        L.marker([g.lat, g.lng], {
-          icon: L.divIcon({ html: gateHtml(g.name), className: '', iconAnchor: [36, 12] }),
-          interactive: false,
-          zIndexOffset: 200,
-        }).addTo(map)
-      }
-
-      // ── Amenities ───────────────────────────────────────────────────────────
-      for (const a of AMENITIES) {
-        L.marker([a.lat, a.lng], {
-          icon: L.divIcon({ html: amenityHtml(a.icon, a.name), className: '', iconAnchor: [36, 12] }),
-          interactive: false,
-          zIndexOffset: 200,
+          zIndexOffset: zIndexMap[lm.category] ?? 200,
         }).addTo(map)
       }
 
@@ -206,8 +160,7 @@ export default function LeafletMap({
         }).addTo(map).bindPopup(popup, { maxWidth: 240 })
       }
 
-      // ── Approximate pins (IF-derived) ─────────────────────────────────────
-      // Group by landmark key so we can jitter siblings
+      // ── Approximate / tagged pins ──────────────────────────────────────────
       const byLandmark = new Map<string, ApproxPin[]>()
       for (const ap of approxPins) {
         const key = `${ap.location.lat.toFixed(5)},${ap.location.lng.toFixed(5)}`
@@ -217,10 +170,21 @@ export default function LeafletMap({
 
       for (const group of byLandmark.values()) {
         group.forEach((ap, idx) => {
-          const lat = jitter(ap.location.lat, idx, group.length)
-          const lng = jitter(ap.location.lng, idx, group.length)
-          const pct = Math.round(ap.location.confidence * 100)
-          const col = confColor(ap.location.confidence)
+          const lat      = jitter(ap.location.lat, idx, group.length)
+          const lng      = jitter(ap.location.lng, idx, group.length)
+          const isTagged = ap.location.confidence >= 1.0
+          const col      = confColor(ap.location.confidence)
+
+          const locationLine = isTagged
+            ? `<p style="font-size:10px;color:#2E7D32;margin:0 0 3px;font-weight:600">📍 ${ap.location.landmarkName}</p>`
+            : `<p style="font-size:10px;color:#777;margin:0 0 3px">
+                 📎 Matched: <em>${ap.location.matchedKeyword}</em><br>
+                 📍 Near: ${ap.location.landmarkName}
+               </p>`
+
+          const confidenceBadge = isTagged
+            ? `<span style="background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700">📍 Tagged</span>`
+            : `<span style="background:${col.bg};color:${col.text};border:1px solid ${col.border};font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700">~${Math.round(ap.location.confidence * 100)}% match</span>`
 
           const popup = `
             <div style="font-family:Inter,sans-serif;min-width:160px;max-width:230px">
@@ -228,12 +192,9 @@ export default function LeafletMap({
               ${ap.species.botanical_name ? `<p style="font-style:italic;color:#666;font-size:11px;margin:0 0 4px">${ap.species.botanical_name}</p>` : ''}
               <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px">
                 <span style="background:#E8F5E9;color:#2E7D32;font-size:10px;padding:1px 6px;border-radius:10px">${ap.species.category}</span>
-                <span style="background:${col.bg};color:${col.text};border:1px solid ${col.border};font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700">~${pct}% match</span>
+                ${confidenceBadge}
               </div>
-              <p style="font-size:10px;color:#777;margin:0 0 3px">
-                📎 Matched: <em>${ap.location.matchedKeyword}</em><br>
-                📍 Near: ${ap.location.landmarkName}
-              </p>
+              ${locationLine}
               ${ap.species.interesting_fact ? `<p style="font-size:11px;color:#444;margin:4px 0;font-style:italic;border-left:2px solid #C8E6C9;padding-left:6px">${ap.species.interesting_fact}</p>` : ''}
               <a href="/plants/${ap.species.id}" style="display:inline-block;margin-top:5px;font-size:11px;color:#2E7D32;font-weight:600">View details →</a>
             </div>`
@@ -266,7 +227,7 @@ export default function LeafletMap({
         mapInstanceRef.current = null
       }
     }
-  }, [pins, approxPins])
+  }, [pins, approxPins, landmarks])
 
   return (
     <>
@@ -280,13 +241,12 @@ export default function LeafletMap({
         <span className="flex items-center gap-1">🏸🏊🏏 Amenity</span>
         <span className="flex items-center gap-1">🌿 GPS pin</span>
         <span className="flex items-center gap-1">
-          <span style={{ border:'2.5px dashed #2E7D32', borderRadius:'50%', padding:'1px 5px', fontSize:10 }}>🌱</span>
-          <span>Approx (from description)</span>
+          <span style={{ border:'2px solid #2E7D32', borderRadius:'50%', padding:'1px 5px', fontSize:10 }}>🌱</span>
+          <span>📍 Tagged</span>
         </span>
-        <span className="flex items-center gap-2 ml-2">
-          <span style={{ background:'#2E7D32', color:'#fff', fontSize:9, padding:'1px 5px', borderRadius:8 }}>88%+</span>
-          <span style={{ background:'#E65100', color:'#fff', fontSize:9, padding:'1px 5px', borderRadius:8 }}>72–87%</span>
-          <span style={{ background:'#880E4F', color:'#fff', fontSize:9, padding:'1px 5px', borderRadius:8 }}>&lt;72%</span>
+        <span className="flex items-center gap-1">
+          <span style={{ border:'2.5px dashed #E65100', borderRadius:'50%', padding:'1px 5px', fontSize:10 }}>🌱</span>
+          <span>Approx %</span>
         </span>
       </div>
       <div ref={mapRef} className="w-full rounded-xl border border-gray-200" style={{ height: '72vh' }} />

@@ -74,7 +74,21 @@ export interface PlantInstance {
   deleted_at: string | null
 }
 
-// Approximate map pin derived by parsing interesting_fact text
+// Landmark row — mirrors landmarks Supabase table
+export interface Landmark {
+  id:          string
+  property_id: string
+  name:        string
+  sub_label:   string | null
+  icon:        string | null
+  lat:         number
+  lng:         number
+  category:    'Block' | 'Gate' | 'Sports' | 'Amenity' | 'Infrastructure' | 'Green Space'
+  active:      boolean
+  created_at:  string
+}
+
+// Approximate map pin — either DB-tagged (confidence=1) or NLP-parsed (<1)
 export interface ApproxLocation {
   landmarkName: string
   lat: number

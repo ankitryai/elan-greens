@@ -54,11 +54,20 @@ const AMENITY_COORDS = {
   clubhouse:  { lat: 12.91795066836152,  lng: 77.6735506542425,  name: 'Clubhouse'            },
   grocery:    { lat: 12.91773367924865,  lng: 77.6734393425718,  name: 'Grocery Store'        },
   helperswc:  { lat: 12.91703499917045,  lng: 77.6740334518334,  name: "Helper's WC"          },
-  genset:     { lat: 12.917548061905524, lng: 77.6743432469792,  name: 'Genset Cage'          },
-  stp:        { lat: 12.917033038420447, lng: 77.67396371442065, name: 'STP'                  },
-  ramp1f:     { lat: 12.917383359083345, lng: 77.67417963222587, name: 'Block 1F Parking Ramp'},
-  ramp2a:     { lat: 12.917321922288737, lng: 77.67333607752764, name: 'Block 2A Parking Ramp'},
-  bikeparking:{ lat: 12.917814396612606, lng: 77.67245228966084, name: 'Workers Bike Parking' },
+  genset:     { lat: 12.917548061905524, lng: 77.6743432469792,  name: 'Genset Cage'           },
+  stp:        { lat: 12.917033038420447, lng: 77.67396371442065, name: 'STP'                   },
+  ramp1e:     { lat: 12.918103548095322, lng: 77.67404445281441, name: 'Block 1E Parking Ramp' },
+  ramp1f:     { lat: 12.917383359083345, lng: 77.67417963222587, name: 'Block 1F Parking Ramp' },
+  ramp2a:     { lat: 12.917321922288737, lng: 77.67333607752764, name: 'Block 2A Parking Ramp' },
+  bikeparking:{ lat: 12.917814396612606, lng: 77.67245228966084, name: 'Workers Bike Parking'  },
+  evcharging: { lat: 12.917490694834264, lng: 77.6743131313502,  name: 'EV Charging Station'   },
+  gazebo:     { lat: 12.917379930849277, lng: 77.6736874868455,  name: 'Sitting Gazebo'        },
+  pooloverflow:{ lat: 12.917580580710785, lng: 77.67382226784446, name: 'Pool Overflow Area'   },
+  amphitheatre:{ lat: 12.917940375313487, lng: 77.67322212636206, name: 'Amphitheatre'         },
+  guarddining:{ lat: 12.917746917361551, lng: 77.67239600324899, name: 'Guard Dining Room'     },
+  nursery:    { lat: 12.917812275543776, lng: 77.67449349063475, name: 'Elan Nursery Garden'   },
+  openairgym: { lat: 12.918296579148617, lng: 77.67391279240621, name: 'Open Air Gym'          },
+  composting: { lat: 12.918534482328027, lng: 77.67283588550282, name: 'Composting Room'       },
 }
 
 // ── Block number → letter mapping ─────────────────────────────────────────────
@@ -169,13 +178,24 @@ export function parseLocationFromIF(raw: string): ApproxLocation | null {
     [/gen\s*set|genset|\bgenerator\b/,                   'genset',      0.93, 'genset cage'         ],
     [/\bstp\b|sewage.*plant|treatment.*plant/,           'stp',         0.93, 'STP'                 ],
     // Ramp disambiguation: check block context before adding ramp candidate
+    ...((/1e|pratle|block\s*e\b|\be\s*block/).test(t) && /ramp|basement.*exit|exit.*ramp/.test(t)
+        ? [[/ramp|basement.*exit|exit.*ramp/, 'ramp1e', 0.91, '1E parking ramp']] as [RegExp, keyof typeof AMENITY_COORDS, number, string][]
+        : []),
     ...((/1f|raxton|block\s*f\b|\bf\s*block/).test(t) && /ramp|basement.*exit|exit.*ramp/.test(t)
         ? [[/ramp|basement.*exit|exit.*ramp/, 'ramp1f', 0.91, '1F parking ramp']] as [RegExp, keyof typeof AMENITY_COORDS, number, string][]
         : []),
     ...((/2a|sanster/).test(t) && /ramp|basement.*exit|exit.*ramp/.test(t)
         ? [[/ramp|basement.*exit|exit.*ramp/, 'ramp2a', 0.91, '2A parking ramp']] as [RegExp, keyof typeof AMENITY_COORDS, number, string][]
         : []),
-    [/bike\s*parking|workers.*parking|worker.*bike/,     'bikeparking', 0.91, 'bike parking'        ],
+    [/bike\s*parking|workers.*parking|worker.*bike/,          'bikeparking',  0.91, 'bike parking'        ],
+    [/ev\s*charg|electric.*charg|charg.*station/,              'evcharging',   0.93, 'EV charging station' ],
+    [/gazebo|sitting\s*area.*gazebo|gazebo.*sitting/,          'gazebo',       0.93, 'sitting gazebo'      ],
+    [/pool.*overflow|overflow.*pool|pool.*water.*area/,        'pooloverflow', 0.93, 'pool overflow area'  ],
+    [/amphitheatre|amphitheater|ampi\s*theatre|open.*stage/,   'amphitheatre', 0.93, 'amphitheatre'        ],
+    [/guard.*dining|security.*dining|guard.*canteen/,          'guarddining',  0.93, 'guard dining room'   ],
+    [/nursery\s*(garden)?|elan\s*nursery|plant\s*nursery/,     'nursery',      0.93, 'nursery garden'      ],
+    [/open\s*air\s*gym|outdoor\s*gym|open\s*gym/,              'openairgym',   0.93, 'open air gym'        ],
+    [/compost(ing)?\s*(room|area|unit)?|composting/,           'composting',   0.93, 'composting room'     ],
   ]
   for (const [pattern, key, conf, label] of amenityRules) {
     const re = typeof pattern === 'string' ? new RegExp(pattern) : pattern

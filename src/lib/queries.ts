@@ -127,6 +127,21 @@ export async function getLandmarks(propertyId = 'elan'): Promise<Landmark[]> {
   }
 }
 
+export async function getPlantLocationInfo(propertyId = 'elan'): Promise<{ species_id: string; location_info: string }[]> {
+  try {
+    const db = createPublicClient()
+    const { data, error } = await db
+      .from('plant_location_info')
+      .select('species_id, location_info')
+      .eq('property_id', propertyId)
+      .not('location_info', 'is', null)
+    if (error) return []
+    return (data ?? []).filter(r => r.location_info) as { species_id: string; location_info: string }[]
+  } catch {
+    return []
+  }
+}
+
 export async function getPlantLandmarkTags(): Promise<{ species_id: string; landmark_id: string }[]> {
   try {
     const db = createPublicClient()

@@ -2,7 +2,7 @@
 // DB-tagged plants get exact landmark pins (confidence=1.0).
 // Untagged plants with interesting_fact fall back to NLP parsing.
 
-import { getAllSpecies, getAllInstances, getLandmarks, getPlantLandmarkTags } from '@/lib/queries'
+import { getAllSpecies, getAllInstances, getLandmarks, getPlantLandmarkTags, getPlantLocationInfo } from '@/lib/queries'
 import { parseLocationFromIF } from '@/lib/locationParser'
 import type { PlantInstance, PlantSpecies, ApproxPin, Landmark } from '@/types'
 import MapClient from '@/components/MapClient'
@@ -16,12 +16,17 @@ function categoryToLocationType(category: string): ApproxPin['location']['locati
 }
 
 export default async function MapPage() {
-  const [species, instances, landmarks, landmarkTags] = await Promise.all([
+  const [species, instances, landmarks, landmarkTags, locationInfoRows] = await Promise.all([
     getAllSpecies(),
     getAllInstances(),
     getLandmarks('elan'),
     getPlantLandmarkTags(),
+    getPlantLocationInfo('elan'),
   ])
+
+  const speciesLocationMap = Object.fromEntries(
+    locationInfoRows.map(r => [r.species_id, r.location_info])
+  )
 
   const speciesMap    = Object.fromEntries(species.map(s => [s.id, s]))
   const landmarkMap   = Object.fromEntries(landmarks.map(l => [l.id, l]))
@@ -64,11 +69,13 @@ export default async function MapPage() {
     )
 
   // NLP fallback for species with no GPS and no DB tag
+  // Uses plant_location_info (property-scoped) instead of the global interesting_fact
   const taggedSpeciesIds = new Set(Object.keys(speciesLandmarks))
   const nlpPins: ApproxPin[] = species
-    .filter(s => !pinnedSpeciesIds.has(s.id) && !taggedSpeciesIds.has(s.id) && s.interesting_fact)
+    .filter(s => !pinnedSpeciesIds.has(s.id) && !taggedSpeciesIds.has(s.id) && (speciesLocationMap[s.id] || s.interesting_fact))
     .flatMap(s => {
-      const loc = parseLocationFromIF(s.interesting_fact!)
+      const text = speciesLocationMap[s.id] ?? s.interesting_fact!
+      const loc = parseLocationFromIF(text)
       return loc ? [{ species: s, location: loc }] : []
     })
 

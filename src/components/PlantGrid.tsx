@@ -106,7 +106,14 @@ export default function PlantGrid({
     if (sort === 'name') {
       results.sort((a, b) => a.common_name.localeCompare(b.common_name))
     } else {
-      results.sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''))
+      // Plants without photos always sink below those with photos; within each
+      // group maintain recency order so new additions surface naturally.
+      results.sort((a, b) => {
+        const aHas = a.img_main_url ? 1 : 0
+        const bHas = b.img_main_url ? 1 : 0
+        if (bHas !== aHas) return bHas - aHas
+        return (b.updated_at ?? '').localeCompare(a.updated_at ?? '')
+      })
     }
     return results
   }, [plants, search, activeCategory, sort])

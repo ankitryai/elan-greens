@@ -90,17 +90,27 @@ export default function PlantGrid({
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
+    const words = q ? q.split(/\s+/).filter(Boolean) : []
+
     const results = plants.filter(p => {
-      const matchesSearch =
-        !q ||
-        p.common_name.toLowerCase().includes(q) ||
-        (p.botanical_name?.toLowerCase().includes(q) ?? false) ||
-        (p.hindi_name?.toLowerCase().includes(q) ?? false) ||
-        (p.kannada_name?.toLowerCase().includes(q) ?? false) ||
-        (p.tamil_name?.toLowerCase().includes(q) ?? false) ||
-        (p.search_tags?.toLowerCase().includes(q) ?? false)
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory
-      return matchesSearch && matchesCategory
+      if (!matchesCategory) return false
+      if (!q) return true
+
+      // Flat tokens: named fields + category + each pipe-separated search tag
+      const tokens = [
+        p.common_name,
+        p.botanical_name,
+        p.hindi_name,
+        p.kannada_name,
+        p.tamil_name,
+        p.category,
+        ...(p.search_tags?.split('|').map(t => t.trim()) ?? []),
+      ].filter(Boolean).map(t => t!.toLowerCase())
+
+      // Match if ANY query word hits ANY token in either direction
+      // (bidirectional handles plurals: "climbers"⊇"climber", "yellows"⊇"yellow")
+      return words.some(word => tokens.some(token => token.includes(word) || word.includes(token)))
     })
 
     if (sort === 'name') {
@@ -123,14 +133,17 @@ export default function PlantGrid({
   function getMatchHint(p: PlantSpecies): { lang: string; name: string } | null {
     const q = search.toLowerCase().trim()
     if (!q) return null
-    if (p.common_name.toLowerCase().includes(q)) return null
-    if (p.botanical_name?.toLowerCase().includes(q)) return null
-    if (p.hindi_name?.toLowerCase().includes(q))   return { lang: 'Hindi',   name: p.hindi_name! }
-    if (p.kannada_name?.toLowerCase().includes(q)) return { lang: 'Kannada', name: p.kannada_name! }
-    if (p.tamil_name?.toLowerCase().includes(q))   return { lang: 'Tamil',   name: p.tamil_name! }
-    if (p.search_tags?.toLowerCase().includes(q)) {
-      const matchedTag = p.search_tags.split('|').find(t => t.toLowerCase().includes(q))
-      return matchedTag ? { lang: 'Tag', name: matchedTag } : null
+    const words = q.split(/\s+/).filter(Boolean)
+    const hits = (field: string) => words.some(w => field.includes(w) || w.includes(field))
+
+    if (hits(p.common_name.toLowerCase())) return null
+    if (p.botanical_name && hits(p.botanical_name.toLowerCase())) return null
+    if (p.hindi_name   && hits(p.hindi_name.toLowerCase()))   return { lang: 'Hindi',   name: p.hindi_name }
+    if (p.kannada_name && hits(p.kannada_name.toLowerCase())) return { lang: 'Kannada', name: p.kannada_name }
+    if (p.tamil_name   && hits(p.tamil_name.toLowerCase()))   return { lang: 'Tamil',   name: p.tamil_name }
+    if (p.search_tags) {
+      const matched = p.search_tags.split('|').map(t => t.trim()).find(t => hits(t.toLowerCase()))
+      if (matched) return { lang: 'Tag', name: matched }
     }
     return null
   }

@@ -8,6 +8,11 @@ import type { PlantSpecies, PlantCategory } from '@/types'
 
 const CATEGORIES: PlantCategory[] = ['Tree','Palm','Shrub','Herb','Creeper','Climber','Hedge','Grass']
 
+// English filler words that should not be matched against plant fields.
+// Without this, "all" matches "balli" (Kannada suffix) and "hymenocallis"
+// (botanical name), producing irrelevant results.
+const STOP_WORDS = new Set(['all','the','a','an','and','or','of','in','at','to','for','some','any','me','my','us','show','find','get','give','list'])
+
 /* M3 tonal category colours (bg / text) */
 const CATEGORY_TONES: Record<PlantCategory, { bg: string; text: string }> = {
   Tree:    { bg: '#C8E6C9', text: '#1B5E20' },
@@ -90,12 +95,14 @@ export default function PlantGrid({
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
-    const words = q ? q.split(/\s+/).filter(Boolean) : []
+    // Strip stop words so "all yellows" → ["yellows"], preventing "all" from
+    // substring-matching botanical names like "hymenocallis" or Kannada "-balli".
+    const words = q ? q.split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w)) : []
 
     const results = plants.filter(p => {
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory
       if (!matchesCategory) return false
-      if (!q) return true
+      if (!q || words.length === 0) return true
 
       // Flat tokens: named fields + category + each pipe-separated search tag
       const tokens = [
@@ -133,7 +140,8 @@ export default function PlantGrid({
   function getMatchHint(p: PlantSpecies): { lang: string; name: string } | null {
     const q = search.toLowerCase().trim()
     if (!q) return null
-    const words = q.split(/\s+/).filter(Boolean)
+    const words = q.split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w))
+    if (words.length === 0) return null
     const hits = (field: string) => words.some(w => field.includes(w) || w.includes(field))
 
     if (hits(p.common_name.toLowerCase())) return null

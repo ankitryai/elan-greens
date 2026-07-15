@@ -90,7 +90,7 @@ export default function MapClient({
         {CATEGORIES.filter(c => categoryCounts[c]).map(cat => (
           <button
             key={cat}
-            onClick={() => setActiveCategory(prev => prev === cat ? null : cat)}
+            onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               activeCategory === cat ? 'bg-green-700 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}

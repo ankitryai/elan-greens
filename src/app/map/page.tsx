@@ -4,7 +4,7 @@
 
 import { getAllSpecies, getAllInstances, getLandmarks, getPlantLandmarkTags, getPlantLocationInfo } from '@/lib/queries'
 import { parseLocationFromIF } from '@/lib/locationParser'
-import type { PlantInstance, PlantSpecies, ApproxPin, Landmark } from '@/types'
+import type { PlantInstance, PlantSpecies, ApproxPin, Landmark, PlantCategory } from '@/types'
 import MapClient from '@/components/MapClient'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +15,15 @@ function categoryToLocationType(category: string): ApproxPin['location']['locati
   return 'amenity'
 }
 
-export default async function MapPage() {
+export default async function MapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>
+}) {
+  const { category } = await searchParams
+  const CATEGORIES: PlantCategory[] = ['Tree','Palm','Shrub','Herb','Creeper','Climber','Hedge','Grass']
+  const initialCategory: PlantCategory | null =
+    CATEGORIES.includes(category as PlantCategory) ? (category as PlantCategory) : null
   const [species, instances, landmarks, landmarkTags, locationInfoRows] = await Promise.all([
     getAllSpecies(),
     getAllInstances(),
@@ -100,7 +108,7 @@ export default async function MapPage() {
         📍 Landmark pins show the <strong>approximate area</strong> where a plant grows — not its exact spot.
         Use the landmark as a starting point, then enjoy the fun of discovering it nearby!
       </p>
-      <MapClient pins={exactPins} approxPins={approxPins} landmarks={landmarks} />
+      <MapClient pins={exactPins} approxPins={approxPins} landmarks={landmarks} initialCategory={initialCategory} />
     </div>
   )
 }

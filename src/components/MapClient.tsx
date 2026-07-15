@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import type { PlantInstance, PlantSpecies, ApproxPin, Landmark, PlantCategory } from '@/types'
@@ -44,6 +44,12 @@ export default function MapClient({
     else url.searchParams.delete('category')
     window.history.replaceState({}, '', url.toString())
   }
+
+  // Sync state if initialCategory prop changes (e.g. back-navigation restores a different URL)
+  useEffect(() => {
+    setActiveCategoryState(initialCategory)
+    setActiveSpeciesId(null)
+  }, [initialCategory])
 
   // All unique species that have at least one map pin
   const uniqueSpeciesMap = useMemo(() => {
@@ -195,7 +201,7 @@ export default function MapClient({
                     </p>
                   )}
                   <p className="text-xs mt-1 font-medium" style={{ color: '#2E7D32' }}>
-                    📍 {lms.length === 1 ? lms[0] : `${lms.length} locations`}
+                    📍 {lms.length === 1 ? lms[0] : `near ${lms.length} landmarks`}
                   </p>
                 </div>
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0 opacity-30" aria-hidden>
@@ -261,7 +267,7 @@ export default function MapClient({
                 {/* Landmarks list */}
                 <div className="border-t border-gray-100 px-3 py-2">
                   <p className="text-xs font-semibold text-gray-500 mb-1.5">
-                    Found at {item.landmarks.length} {item.landmarks.length === 1 ? 'location' : 'locations'}
+                    Look near {item.landmarks.length} {item.landmarks.length === 1 ? 'landmark' : 'landmarks'}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {item.landmarks.map((lm, i) => (

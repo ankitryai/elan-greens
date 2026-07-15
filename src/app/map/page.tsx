@@ -99,6 +99,7 @@ export default async function MapPage({
         </p>
       </div>
       <MapClient
+        key={initialCategory ?? 'all'}
         pins={exactPins}
         approxPins={approxPins}
         landmarks={landmarks}

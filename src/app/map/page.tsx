@@ -95,20 +95,16 @@ export default async function MapPage({
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Plant Map</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {exactPins.length  > 0 && `${exactPins.length} GPS-pinned`}
-          {exactPins.length  > 0 && approxPins.length > 0 && ' · '}
-          {taggedPins.length > 0 && `${taggedPins.length} landmark-tagged`}
-          {taggedPins.length > 0 && nlpPins.length   > 0 && ' · '}
-          {nlpPins.length    > 0 && `${nlpPins.length} approx from description`}
-          {total === 0 && '0 plants mapped'}
-          {total > 0 && ' · tap a pin for details'}
+          {species.length} species at Divyasree Elan Homes · tap any plant to find it
         </p>
       </div>
-      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-        📍 Landmark pins show the <strong>approximate area</strong> where a plant grows — not its exact spot.
-        Use the landmark as a starting point, then enjoy the fun of discovering it nearby!
-      </p>
-      <MapClient pins={exactPins} approxPins={approxPins} landmarks={landmarks} initialCategory={initialCategory} />
+      <MapClient
+        pins={exactPins}
+        approxPins={approxPins}
+        landmarks={landmarks}
+        initialCategory={initialCategory}
+        totalSpecies={species.length}
+      />
     </div>
   )
 }

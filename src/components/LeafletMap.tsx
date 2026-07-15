@@ -125,11 +125,13 @@ export default function LeafletMap({
   approxPins,
   landmarks,
   activeCategory,
+  activeSpeciesId,
 }: {
-  pins:           ExactPin[]
-  approxPins:     ApproxPin[]
-  landmarks:      Landmark[]
+  pins:            ExactPin[]
+  approxPins:      ApproxPin[]
+  landmarks:       Landmark[]
   activeCategory?: string | null
+  activeSpeciesId?: string | null
 }) {
   const mapRef         = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<unknown>(null)
@@ -137,9 +139,8 @@ export default function LeafletMap({
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return
 
-    // Which landmark names have at least one plant pinned to them in this view?
-    // Used to dim irrelevant landmarks when a category filter is active.
-    const activeLandmarkNames = activeCategory
+    // Dim landmarks that have no plant of the active category (or species) nearby
+    const activeLandmarkNames = (activeCategory || activeSpeciesId)
       ? new Set(approxPins.map(ap => ap.location.landmarkName))
       : null
 
@@ -227,7 +228,7 @@ export default function LeafletMap({
         mapInstanceRef.current = null
       }
     }
-  }, [pins, approxPins, landmarks, activeCategory])
+  }, [pins, approxPins, landmarks, activeCategory, activeSpeciesId])
 
   return (
     <>

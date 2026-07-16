@@ -159,8 +159,29 @@ Server Components **cannot** use `onMouseEnter`/`onMouseLeave`. Use CSS classes 
 </div>
 ```
 
-### Leaflet map
-`/app/map/page.tsx` is a Server Component that fetches data and passes pins to `<MapClient>`. `MapClient.tsx` is a `'use client'` wrapper that does `dynamic(() => import('@/components/LeafletMap'), { ssr: false })`. `LeafletMap.tsx` is also `'use client'` and imports Leaflet inside `useEffect`. This two-layer pattern is required because `ssr: false` is not allowed in Server Components in Next.js 16.
+### Leaflet map — three-level UX (L0 / L1 / L2)
+`/app/map/page.tsx` is a Server Component that fetches all data and passes it to `<MapClient>`. `MapClient.tsx` is a `'use client'` wrapper that does `dynamic(() => import('@/components/LeafletMap'), { ssr: false })`. `LeafletMap.tsx` is also `'use client'` and imports Leaflet inside `useEffect`. This two-layer pattern is required because `ssr: false` is not allowed in Server Components in Next.js 16.
+
+**Map UX levels:**
+- **L0 (All):** One pin per unique species (first/representative landmark). `LeafletMap` remounts on every level change via `key={mapKey}` where `mapKey = \`${activeCategory ?? 'all'}-${activeSpeciesId ?? 'none'}\``.
+- **L1 (category chip active):** Chip label = unique species count for that category (not pin count). Map still shows one pin per species in that category. Plant list below shows every species as a tappable card showing "near N landmarks".
+- **L2 (species tapped from list):** Map remounts showing ALL landmarks tagged to that one species. Detail card shows "Look near N landmarks" + all landmark pills. "Back to Trees/Shrubs/etc." button returns to L1.
+
+**State in `MapClient.tsx`:**
+```typescript
+const [activeCategory, setActiveCategoryState] = useState<PlantCategory | null>(initialCategory)
+const [activeSpeciesId, setActiveSpeciesId] = useState<string | null>(null)
+// Sync when initialCategory prop changes (e.g. back-navigation)
+useEffect(() => { setActiveCategoryState(initialCategory); setActiveSpeciesId(null) }, [initialCategory])
+```
+
+**Back-navigation fix:** `<MapClient key={initialCategory ?? 'all'} ...>` in `page.tsx` forces a full remount when the URL category changes (e.g. user presses back after visiting plant detail). Without this, `useState(initialCategory)` ignores prop changes and shows stale data while the URL shows the correct category.
+
+**Category chip counts = unique species**, not pin count. A species tagged to 3 landmarks counts as 1, not 3. Computed from `new Map<string, PlantSpecies>()` across all `approxPins` + `exactPins`.
+
+**`approxPins` data model:** One entry per landmark × species pair. A species tagged to 3 landmarks = 3 `ApproxPin` entries. At L0/L1 the map deduplicates to one pin per species; at L2 it shows all.
+
+**Landmark dimming:** When `activeCategory` OR `activeSpeciesId` is set, `activeLandmarkNames` is computed from the display pins and non-relevant landmarks are rendered at `opacity: 0.18`.
 
 **Custom block labels (pending implementation):**
 OSM tiles cannot be edited in the app — add a hardcoded config overlay instead. In `LeafletMap.tsx`, define `BLOCK_LABELS` (name + centroid lat/lng) and `KEY_LOCATIONS` (gate, clubhouse etc.) arrays. Render each as a `L.divIcon` marker so the labels float above the OSM tiles. This is purely additive — OSM data is never touched. Coordinate lookup: open the map in any OSM editor or use Google Maps right-click → "What's here?" to get the lat/lng for each block centroid. Once coordinates are collected, pass them to the component and rendered via `L.marker(latlng, { icon: L.divIcon({ html, className }) })`.
@@ -260,12 +281,18 @@ Always run migrations in order. Check if the table already exists before re-runn
 
 14. **New device setup checklist.** When moving to a new Mac: install Homebrew first (`/bin/bash -c "$(curl -fsSL ...)"`) → add to PATH (`eval "$(/opt/homebrew/bin/brew shellenv zsh)"`) → `brew install node gh` → `gh auth login` → `gh repo clone ankitryai/elan-greens` → `npm install` → create `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (copy values from Vercel dashboard → Settings → Environment Variables). Always dev with `NODE_TLS_REJECT_UNAUTHORIZED=0 npm run dev`.
 
-15. **`PlantGrid` search covers five fields.** `common_name`, `botanical_name`, `hindi_name`, `kannada_name`, `tamil_name` plus `search_tags` (pipe-separated Vision tags). The `getMatchHint()` helper returns which non-obvious field matched so a coloured pill can explain the result. `HINT_COLORS` is the record keyed by `'Hindi' | 'Kannada' | 'Tamil' | 'Tag'`. When the matched field is `common_name` or `botanical_name`, `getMatchHint()` returns `null` (self-evident, no pill needed).
+15. **`MapClient` must have `key={initialCategory ?? 'all'}` in `page.tsx`.** `useState(initialCategory)` only reads `initialCategory` on first mount — it ignores prop changes. When browser back restores a different URL category, the component won't update without the `key` prop forcing a remount. The `useEffect(() => { setActiveCategory(initialCategory) }, [initialCategory])` inside `MapClient` is a second guard for router-cache edge cases.
 
-16. **Voice search in PlantGrid uses Web Speech API, `en-IN` locale, zero cost.** The mic button only renders when `hasSpeech === true` (checked in `useEffect` — never on server). Transcribed text flows directly into the `search` state. No external API; works offline in Chrome and Safari. `SpeechRecognition` is prefixed as `webkitSpeechRecognition` on Safari.
+16. **`window.history.replaceState` vs `router.push` on the map page.** We use `replaceState` (not `router.push`) when changing category so the URL updates silently without causing a full page re-fetch. This keeps map interaction instant but means Next.js's router doesn't know about the URL change — only native browser history does. The trade-off: fast UX but the server component doesn't re-run on chip click (it only re-runs on a real navigation like browser back/forward).
 
-17. **Search tip tooltip is dismissible and persisted.** A one-time tooltip on the search bar hints at language search, tag search, and voice search. Dismissed state stored in `localStorage` as `elan-search-tip-dismissed: '1'`. Dismiss on click or on first successful search.
+17. **`PlantGrid` search covers five fields + category.** `common_name`, `botanical_name`, `hindi_name`, `kannada_name`, `tamil_name`, `category`, plus `search_tags` (pipe-separated Vision tags). The `getMatchHint()` helper returns which non-obvious field matched so a coloured pill can explain the result. `HINT_COLORS` is the record keyed by `'Hindi' | 'Kannada' | 'Tamil' | 'Tag'`. When the matched field is `common_name` or `botanical_name`, `getMatchHint()` returns `null` (self-evident, no pill needed).
 
-18. **`search_tags` are pre-computed by Vision, never at query time.** The public app does plain `String.prototype.includes()` on `plant_species.search_tags`. No API call needed. Tags cover visual properties (colour, texture, shape) from Vision `LABEL_DETECTION` + `IMAGE_PROPERTIES`. If a plant has no tags yet, it simply won't match colour-based searches until the admin backfills.
+18. **`PlantGrid` search uses stop words + bidirectional substring match.** Multi-word queries like "all yellows" are split into words; stop words (`STOP_WORDS` set: "all", "the", "show", "find", etc.) are stripped so they don't match short Kannada suffixes (e.g. "all" matching "balli"). Match logic: `token.includes(word) || word.includes(token)` — bidirectional so "herb" matches "herbs" and vice-versa.
 
-19. **Map block labels — custom `L.divIcon` overlay, not OSM edits.** The apartment block names on the OSM basemap are wrong/absent. Do not edit OSM. Instead, define `BLOCK_LABELS` and `KEY_LOCATIONS` arrays in `LeafletMap.tsx` with corrected names and centroid lat/lng values (obtained from Google Maps right-click). Render as Leaflet `divIcon` markers that float above the tiles. This is purely additive and survives OSM tile updates.
+19. **Voice search in PlantGrid uses Web Speech API, `en-IN` locale, zero cost.** The mic button only renders when `hasSpeech === true` (checked in `useEffect` — never on server). Transcribed text flows directly into the `search` state. No external API; works offline in Chrome and Safari. `SpeechRecognition` is prefixed as `webkitSpeechRecognition` on Safari.
+
+20. **Search tip tooltip is dismissible and persisted.** A one-time tooltip on the search bar hints at language search, tag search, and voice search. Dismissed state stored in `localStorage` as `elan-search-tip-dismissed: '1'`. Dismiss on click or on first successful search.
+
+21. **`search_tags` are pre-computed by Vision, never at query time.** The public app does plain `String.prototype.includes()` on `plant_species.search_tags`. No API call needed. Tags cover visual properties (colour, texture, shape) from Vision `LABEL_DETECTION` + `IMAGE_PROPERTIES`. If a plant has no tags yet, it simply won't match colour-based searches until the admin backfills.
+
+22. **Map block labels — custom `L.divIcon` overlay, not OSM edits.** The apartment block names on the OSM basemap are wrong/absent. Do not edit OSM. Instead, define `BLOCK_LABELS` and `KEY_LOCATIONS` arrays in `LeafletMap.tsx` with corrected names and centroid lat/lng values (obtained from Google Maps right-click). Render as Leaflet `divIcon` markers that float above the tiles. This is purely additive and survives OSM tile updates.

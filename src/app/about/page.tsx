@@ -17,9 +17,10 @@ export default function AboutPage() {
           trees, shrubs, and flowering plants that make everyday life greener and more peaceful.
         </p>
         <p>
-          <strong style={{ color: 'var(--md-on-surface)' }}>Elan Greens</strong> is a living
-          directory of every plant species found within the society — their names in multiple
-          languages, ecological properties, locations, and the stories behind them.
+          <strong style={{ color: 'var(--md-on-surface)' }}>Elan Greens</strong> is a community-built
+          record of plant species found within the society — their names in multiple languages,
+          ecological properties, approximate locations, and the stories behind them. It is a
+          best-effort catalogue aimed at sparking awareness and curiosity, not a live or exhaustive directory.
         </p>
       </div>
 
@@ -64,15 +65,61 @@ export default function AboutPage() {
       >
         <p className="text-sm font-semibold">How data is collected</p>
         <p className="text-sm opacity-90">
-          Plants are identified using AI (Plant.id) and verified by the society admin.
-          Species marked <span className="font-semibold">TENTATIVE</span> are AI-suggested
-          and pending manual verification.
+          This is a manual exercise — residents and admins observe plants on the ground,
+          identify them, and upload the information. Identification is aided by tools like{' '}
+          <span className="font-semibold">Plant.id</span>,{' '}
+          <span className="font-semibold">Google Cloud Vision</span>, and{' '}
+          <span className="font-semibold">iNaturalist</span> (largely open-source), with
+          each entry reviewed and curated by the society admin.
+          Species marked <span className="font-semibold">TENTATIVE</span> are pending
+          final verification.
+        </p>
+      </div>
+
+      {/* Accuracy & limitations */}
+      <div
+        className="rounded-[16px] p-4 space-y-3"
+        style={{ background: 'var(--md-surface-variant)', color: 'var(--md-on-surface-variant)' }}
+      >
+        <p className="text-sm font-semibold" style={{ color: 'var(--md-on-surface)' }}>
+          Accuracy & limitations
+        </p>
+        <div className="space-y-2.5 text-sm">
+          <p>
+            <span className="font-medium" style={{ color: 'var(--md-on-surface)' }}>Landmark locations</span>{' '}
+            are <span className="font-medium">directional, not precise</span>. Use them as a
+            general guide — think &ldquo;near the Amphitheatre&rdquo; rather than an exact spot.
+          </p>
+          <p>
+            <span className="font-medium" style={{ color: 'var(--md-on-surface)' }}>Species labelling</span>{' '}
+            targets genus and common name. Subspecies or closely related varieties may have
+            discrepancies. The aim is <span className="font-medium">~80% accuracy</span> — enough
+            to build awareness and curiosity, not a botanist&rsquo;s field log.
+          </p>
+          <p>
+            <span className="font-medium" style={{ color: 'var(--md-on-surface)' }}>Seasonality & change</span>{' '}
+            — flowering patterns, watering cycles, and the movement of potted plants mean
+            what you see on the map may not match what&rsquo;s on the ground today. Records can
+            be dated. We aim for <span className="font-medium">max 80% accuracy</span> at any
+            given time.
+          </p>
+        </div>
+      </div>
+
+      {/* Thanks */}
+      <div className="text-sm leading-relaxed" style={{ color: 'var(--md-on-surface-variant)' }}>
+        <p>
+          A heartfelt thank you to{' '}
+          <strong style={{ color: 'var(--md-on-surface)' }}>EHOA</strong> and the entire{' '}
+          <strong style={{ color: 'var(--md-on-surface)' }}>Paradigm</strong> staff —
+          especially the landscaping and gardening team — for keeping Elan Homes green and clean.
+          This directory exists because of the green space you nurture every day.
         </p>
       </div>
 
       <div className="text-xs space-y-1 pt-2" style={{ color: 'var(--md-outline)' }}>
         <p>Plant images sourced from Wikimedia Commons under their respective open licences.</p>
-        <p>Plant identification powered by Plant.id and Google Cloud Vision.</p>
+        <p>Plant identification powered by Plant.id, Google Cloud Vision, and iNaturalist.</p>
         <p>Maps powered by OpenStreetMap contributors.</p>
         <p className="pt-2" style={{ color: 'var(--md-primary)' }}>Built with ♥ for the Elan community.</p>
       </div>

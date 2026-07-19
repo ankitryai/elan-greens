@@ -4,6 +4,7 @@ import { getSpeciesById, getInstancesBySpecies, getRelatedSpecies } from '@/lib/
 import { formatPlantAge, formatDate, splitPipe } from '@/lib/formatters'
 import SubImageGallery from '@/components/SubImageGallery'
 import ZoomableImage from '@/components/ZoomableImage'
+import FeedbackTrigger from '@/components/FeedbackTrigger'
 
 export const revalidate = 3600
 
@@ -491,6 +492,17 @@ export default async function PlantDetailPage({
           </div>
         </Section>
       )}
+
+      {/* ── Feedback nudge ── */}
+      <div className="pt-2 pb-2 flex items-center justify-center gap-1.5 text-xs" style={{ color: 'var(--md-outline)' }}>
+        <span>Something off?</span>
+        <FeedbackTrigger
+          topic="species_correction"
+          referenceName={species.common_name}
+          label="Suggest a correction →"
+          className="text-xs font-medium underline underline-offset-2 transition-opacity hover:opacity-70"
+        />
+      </div>
 
     </div>
   )

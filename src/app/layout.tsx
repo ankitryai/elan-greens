@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import BottomNav from '@/components/BottomNav'
 import TopNav from '@/components/TopNav'
+import FeedbackWidget from '@/components/FeedbackWidget'
 
 export const metadata: Metadata = {
   title: 'Elan Greens — Divyasree Elan Homes',
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <BottomNav />
+        <FeedbackWidget />
       </body>
     </html>
   )

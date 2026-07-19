@@ -74,8 +74,7 @@ export default function FeedbackWidget() {
 
   function handleClose() { setOpen(false); setTimeout(reset, 300) }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit() {
     if (!topic || !subtopic || details.length < 10) return
     setSubmitting(true)
     setError(null)
@@ -171,7 +170,7 @@ export default function FeedbackWidget() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form className="space-y-4">
                   {/* Honeypot — hidden from real users */}
                   <input
                     type="text" tabIndex={-1} aria-hidden="true"
@@ -289,31 +288,31 @@ export default function FeedbackWidget() {
                       />
                     </div>
                   )}
-
-                  {error && (
-                    <p className="text-xs px-3 py-2 rounded-lg" style={{ background: 'var(--md-error-container)', color: 'var(--md-on-error-container)' }}>
-                      {error}
-                    </p>
-                  )}
-
-                  {topic && (
-                    <button
-                      type="submit" disabled={!canSubmit}
-                      className="w-full py-3 rounded-xl text-sm font-semibold transition-all duration-150 disabled:opacity-40"
-                      style={{ background: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
-                    >
-                      {submitting ? 'Sending…' : 'Send feedback'}
-                    </button>
-                  )}
                 </form>
               )}
             </div>
 
-            {/* Footer note */}
-            {!success && (
-              <p className="px-5 py-3 text-[11px] border-t shrink-0" style={{ color: 'var(--md-outline)', borderColor: 'var(--md-outline-variant)' }}>
-                Feedback is reviewed by the Elan Greens admin. One submission per 10 minutes.
-              </p>
+            {/* Sticky action area — error + submit always visible, never buried in scroll */}
+            {!success && topic && (
+              <div className="px-5 pt-3 pb-4 shrink-0 space-y-2 border-t" style={{ borderColor: 'var(--md-outline-variant)' }}>
+                {error && (
+                  <p className="text-xs px-3 py-2 rounded-lg" style={{ background: 'var(--md-error-container)', color: 'var(--md-on-error-container)' }}>
+                    {error}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className="w-full py-3 rounded-xl text-sm font-semibold transition-all duration-150 disabled:opacity-40"
+                  style={{ background: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
+                >
+                  {submitting ? 'Sending…' : 'Send feedback'}
+                </button>
+                <p className="text-[11px] text-center" style={{ color: 'var(--md-outline)' }}>
+                  One submission per 10 minutes · reviewed by admin
+                </p>
+              </div>
             )}
           </div>
         </div>

@@ -49,10 +49,11 @@ export async function POST(request: NextRequest) {
 
     const { _hp: _ignored, ...data } = parsed.data
 
-    // Insert into Supabase (service role bypasses RLS for rate-limit check capability)
+    // Anon key is sufficient — the feedback table has a public INSERT RLS policy.
+    // Service role key is not required for this route.
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { auth: { persistSession: false } },
     )
 

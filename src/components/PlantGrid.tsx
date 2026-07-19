@@ -323,7 +323,7 @@ export default function PlantGrid({
   )
 }
 
-// ── PlantCard — single grid tile ─────────────────────────────────────────────
+// ── PlantCard — image-fill card with gradient text overlay ───────────────────
 
 function PlantCard({
   plant,
@@ -334,71 +334,77 @@ function PlantCard({
   instanceCount: number
   matchHint: { lang: string; name: string } | null
 }) {
-  const tone = CATEGORY_TONES[plant.category]
+  const tone  = CATEGORY_TONES[plant.category]
   const hintStyle = matchHint ? HINT_COLORS[matchHint.lang] : null
+  const hasImg = !!plant.img_main_url
 
   return (
     <div
-      className="rounded-xl overflow-hidden transition-all duration-200 h-full flex flex-col"
+      className="rounded-2xl overflow-hidden relative aspect-[3/4] transition-transform duration-200 ease-out group-hover:scale-[1.02] group-active:scale-[0.97]"
       style={{
-        background: 'var(--md-surface-container-lowest)',
-        boxShadow: 'var(--md-elevation-1)',
+        background: hasImg ? undefined : 'var(--md-surface-container)',
+        boxShadow: 'var(--md-elevation-2)',
       }}
-      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--md-elevation-3)' }}
-      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--md-elevation-1)' }}
     >
-      {/* Thumbnail */}
-      <div
-        className="aspect-[4/3] relative overflow-hidden"
-        style={{ background: 'var(--md-surface-container-high)' }}
-      >
-        {plant.img_main_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={plant.img_main_url}
-            alt={plant.common_name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--md-outline-variant)' }}>
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10" aria-hidden>
-              <path d={LEAF_PATH} />
-            </svg>
-          </div>
-        )}
-        {plant.tentative && (
-          <span
-            className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: '#FFF3CD', color: '#7D5A00' }}
-          >
-            TENTATIVE
-          </span>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
-        <div>
-          <p className="text-sm font-semibold leading-tight line-clamp-1" style={{ color: 'var(--md-on-surface)' }}>
-            {plant.common_name}
-          </p>
-          {plant.botanical_name && (
-            <p className="text-xs italic mt-0.5 line-clamp-1" style={{ color: 'var(--md-on-surface-variant)' }}>
-              {plant.botanical_name}
-            </p>
-          )}
-          {/* Match hint — coloured pill showing which regional name triggered this result */}
-          {matchHint && hintStyle && (
-            <span
-              className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded-full"
-              style={{ background: hintStyle.bg, color: hintStyle.text }}
-            >
-              {matchHint.lang}: {matchHint.name}
-            </span>
-          )}
+      {/* Full-bleed image */}
+      {hasImg ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={plant.img_main_url!}
+          alt={plant.common_name}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center pb-16"
+          style={{ color: 'var(--md-outline-variant)' }}>
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-14 h-14" aria-hidden>
+            <path d={LEAF_PATH} />
+          </svg>
         </div>
+      )}
 
-        <div className="flex items-center justify-between">
+      {/* Gradient scrim (image only) */}
+      {hasImg && (
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+      )}
+
+      {/* Tentative badge — top right */}
+      {plant.tentative && (
+        <span
+          className="absolute top-2 right-2 z-10 text-[10px] font-bold px-2 py-0.5 rounded-full"
+          style={{ background: '#FFF3CD', color: '#7D5A00' }}
+        >
+          TENTATIVE
+        </span>
+      )}
+
+      {/* Match hint — top left */}
+      {matchHint && hintStyle && (
+        <span
+          className="absolute top-2 left-2 z-10 text-[10px] font-medium px-2 py-0.5 rounded-full"
+          style={{ background: hintStyle.bg, color: hintStyle.text }}
+        >
+          {matchHint.lang}: {matchHint.name}
+        </span>
+      )}
+
+      {/* Name / category overlay at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <p
+          className="text-sm font-semibold leading-tight line-clamp-2 drop-shadow-sm"
+          style={{ color: hasImg ? '#fff' : 'var(--md-on-surface)' }}
+        >
+          {plant.common_name}
+        </p>
+        {plant.botanical_name && (
+          <p
+            className="text-[11px] italic mt-0.5 line-clamp-1 drop-shadow-sm"
+            style={{ color: hasImg ? 'rgba(255,255,255,0.72)' : 'var(--md-on-surface-variant)' }}
+          >
+            {plant.botanical_name}
+          </p>
+        )}
+        <div className="flex items-center justify-between mt-1.5">
           <span
             className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
             style={{ background: tone.bg, color: tone.text }}
@@ -406,8 +412,11 @@ function PlantCard({
             {plant.category}
           </span>
           {instanceCount > 0 && (
-            <span className="text-[10px]" style={{ color: 'var(--md-outline)' }}>
-              {instanceCount} {instanceCount === 1 ? 'location' : 'locations'}
+            <span
+              className="text-[10px] drop-shadow-sm"
+              style={{ color: hasImg ? 'rgba(255,255,255,0.65)' : 'var(--md-outline)' }}
+            >
+              {instanceCount} {instanceCount === 1 ? 'loc' : 'locs'}
             </span>
           )}
         </div>

@@ -213,76 +213,157 @@ export default function MapClient({
         </div>
       )}
 
-      {/* L2 — species drilled in: show its details + all landmarks + back button */}
-      {activeSpeciesId && activeSpecies && (
-        <div className="space-y-3 pt-1">
-          <button
-            onClick={() => setActiveSpeciesId(null)}
-            className="flex items-center gap-1.5 text-sm text-green-700 font-medium hover:text-green-900"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden>
-              <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-            </svg>
-            Back to {activeCategory}s
-          </button>
+      {/* L2 desktop card — hidden on mobile (mobile uses bottom sheet below) */}
+      {activeSpeciesId && activeSpecies && (() => {
+        const item = plantListItems.find(i => i.species.id === activeSpeciesId)!
+        return (
+          <div className="hidden sm:block space-y-3 pt-1">
+            <button
+              onClick={() => setActiveSpeciesId(null)}
+              className="flex items-center gap-1.5 text-sm text-green-700 font-medium hover:text-green-900"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden>
+                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+              </svg>
+              Back to {activeCategory}s
+            </button>
 
-          {/* Selected plant card — links to detail page */}
-          {(() => {
-            const item = plantListItems.find(i => i.species.id === activeSpeciesId)!
-            return (
-              <div className="rounded-xl border border-green-200 overflow-hidden"
-                style={{ background: 'var(--md-surface-container-lowest)', boxShadow: 'var(--md-elevation-2)' }}>
-                {/* Header row */}
-                <div className="flex items-center gap-3 p-3">
-                  {activeSpecies.img_main_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={activeSpecies.img_main_url}
-                      alt={activeSpecies.common_name}
-                      className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl flex-shrink-0"
-                      style={{ background: 'var(--md-surface-container)' }}>
-                      🌱
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-base leading-tight" style={{ color: 'var(--md-on-surface)' }}>
-                      {activeSpecies.common_name}
-                    </p>
-                    {activeSpecies.botanical_name && (
-                      <p className="text-xs italic mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
-                        {activeSpecies.botanical_name}
-                      </p>
-                    )}
-                    <Link
-                      href={`/plants/${activeSpecies.id}`}
-                      className="inline-block mt-1.5 text-xs font-semibold text-green-700 hover:underline"
-                    >
-                      View plant details →
-                    </Link>
-                  </div>
-                </div>
-                {/* Landmarks list */}
-                <div className="border-t border-gray-100 px-3 py-2">
-                  <p className="text-xs font-semibold text-gray-500 mb-1.5">
-                    Look near {item.landmarks.length} {item.landmarks.length === 1 ? 'landmark' : 'landmarks'}
+            <div className="rounded-xl border border-green-200 overflow-hidden"
+              style={{ background: 'var(--md-surface-container-lowest)', boxShadow: 'var(--md-elevation-2)' }}>
+              <div className="flex items-center gap-3 p-3">
+                {activeSpecies.img_main_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={activeSpecies.img_main_url} alt={activeSpecies.common_name}
+                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl flex-shrink-0"
+                    style={{ background: 'var(--md-surface-container)' }}>🌱</div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-base leading-tight" style={{ color: 'var(--md-on-surface)' }}>
+                    {activeSpecies.common_name}
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {item.landmarks.map((lm, i) => (
-                      <span key={i}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-100">
-                        📍 {lm}
-                      </span>
-                    ))}
-                  </div>
+                  {activeSpecies.botanical_name && (
+                    <p className="text-xs italic mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                      {activeSpecies.botanical_name}
+                    </p>
+                  )}
+                  <Link href={`/plants/${activeSpecies.id}`}
+                    className="inline-block mt-1.5 text-xs font-semibold text-green-700 hover:underline">
+                    View plant details →
+                  </Link>
                 </div>
               </div>
-            )
-          })()}
-        </div>
+              <div className="border-t border-gray-100 px-3 py-2">
+                <p className="text-xs font-semibold text-gray-500 mb-1.5">
+                  Look near {item.landmarks.length} {item.landmarks.length === 1 ? 'landmark' : 'landmarks'}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {item.landmarks.map((lm, i) => (
+                    <span key={i}
+                      className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-100">
+                      📍 {lm}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Mobile bottom sheet scrim */}
+      {activeSpeciesId && (
+        <div
+          className="sm:hidden fixed inset-0 z-[55] bg-black/40"
+          onClick={() => setActiveSpeciesId(null)}
+        />
       )}
+
+      {/* Mobile bottom sheet — slides up when a species is selected */}
+      <div
+        className={`sm:hidden fixed inset-x-0 bottom-0 z-[60] transition-transform duration-300 ease-out ${
+          activeSpeciesId && activeSpecies ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
+        <div
+          className="rounded-t-3xl overflow-hidden flex flex-col"
+          style={{
+            background: 'var(--md-surface)',
+            boxShadow: '0 -4px 32px rgba(0,0,0,0.18)',
+            maxHeight: '75dvh',
+            paddingBottom: 'calc(80px + env(safe-area-inset-bottom))',
+          }}
+        >
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1 shrink-0">
+            <div className="w-10 h-1 rounded-full" style={{ background: 'var(--md-outline-variant)' }} />
+          </div>
+
+          {/* Scrollable content */}
+          <div className="overflow-y-auto px-4 pt-2 pb-4">
+            {activeSpeciesId && activeSpecies && (() => {
+              const item = plantListItems.find(i => i.species.id === activeSpeciesId)
+              if (!item) return null
+              return (
+                <>
+                  {/* Plant header */}
+                  <div className="flex items-center gap-3 mb-4">
+                    {activeSpecies.img_main_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={activeSpecies.img_main_url} alt={activeSpecies.common_name}
+                        className="w-20 h-20 rounded-2xl object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0"
+                        style={{ background: 'var(--md-surface-container)' }}>🌱</div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-lg leading-tight" style={{ color: 'var(--md-on-surface)' }}>
+                        {activeSpecies.common_name}
+                      </p>
+                      {activeSpecies.botanical_name && (
+                        <p className="text-sm italic mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                          {activeSpecies.botanical_name}
+                        </p>
+                      )}
+                      <Link href={`/plants/${activeSpecies.id}`}
+                        className="inline-block mt-2 text-sm font-semibold"
+                        style={{ color: 'var(--md-primary)' }}>
+                        View plant details →
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Landmarks */}
+                  <div className="border-t pt-3" style={{ borderColor: 'var(--md-outline-variant)' }}>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-2"
+                      style={{ color: 'var(--md-on-surface-variant)' }}>
+                      Look near {item.landmarks.length} {item.landmarks.length === 1 ? 'landmark' : 'landmarks'}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {item.landmarks.map((lm, i) => (
+                        <span key={i}
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-green-50 text-green-800 border border-green-100">
+                          📍 {lm}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Back button */}
+                  <button
+                    onClick={() => setActiveSpeciesId(null)}
+                    className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium border transition-colors hover:bg-[var(--md-surface-container)]"
+                    style={{ borderColor: 'var(--md-outline-variant)', color: 'var(--md-on-surface-variant)' }}
+                  >
+                    ← Back to {activeCategory}s
+                  </button>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      </div>
 
       {/* Mapped count footer — only on All view */}
       {!activeCategory && (

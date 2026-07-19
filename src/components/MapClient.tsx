@@ -24,13 +24,11 @@ export default function MapClient({
   approxPins,
   landmarks,
   initialCategory,
-  totalSpecies,
 }: {
   pins:            { instance: PlantInstance; species: PlantSpecies }[]
   approxPins:      ApproxPin[]
   landmarks:       Landmark[]
   initialCategory: PlantCategory | null
-  totalSpecies:    number
 }) {
   const [activeCategory, setActiveCategoryState] = useState<PlantCategory | null>(initialCategory)
   // L2 state — which species is drilled into (shows all its landmarks)
@@ -365,12 +363,6 @@ export default function MapClient({
         </div>
       </div>
 
-      {/* Mapped count footer — only on All view */}
-      {!activeCategory && (
-        <p className="text-xs text-center text-gray-400 pt-1">
-          {mappedSpeciesCount} of {totalSpecies} species mapped · remaining are being documented
-        </p>
-      )}
     </div>
   )
 }

@@ -100,24 +100,6 @@ export default function FeedbackWidget() {
 
   return (
     <>
-      {/* ── Floating trigger button ─────────────────────────────────────────── */}
-      <button
-        onClick={() => { setOpen(true); setSuccess(false); setError(null) }}
-        aria-label="Send feedback"
-        className="fixed z-40 flex items-center gap-1.5 px-3 py-2 rounded-full shadow-md text-xs font-medium transition-all duration-200 hover:shadow-lg active:scale-95"
-        style={{
-          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)',
-          right: '16px',
-          background: 'var(--md-secondary-container)',
-          color: 'var(--md-on-secondary-container)',
-        }}
-      >
-        <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5" aria-hidden>
-          <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V6h2v3z" clipRule="evenodd"/>
-        </svg>
-        Feedback
-      </button>
-
       {/* ── Modal backdrop + panel ──────────────────────────────────────────── */}
       {open && (
         <div

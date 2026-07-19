@@ -88,14 +88,23 @@ export default async function MapPage({
     })
 
   const approxPins = [...taggedPins, ...nlpPins]
-  const total      = exactPins.length + approxPins.length
+
+  // Count unique species that actually appear on the map
+  const mappedSpeciesIds = new Set([
+    ...exactPins.map(p => p.species.id),
+    ...approxPins.map(ap => ap.species.id),
+  ])
+  const mappedCount = mappedSpeciesIds.size
+  const unmappedCount = species.length - mappedCount
 
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Plant Map</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {species.length} species at Divyasree Elan Homes · tap any plant to find it
+          {mappedCount} species mapped
+          {unmappedCount > 0 && ` · ${unmappedCount} more being documented`}
+          {' · tap a plant to find it'}
         </p>
       </div>
       <MapClient
@@ -104,7 +113,6 @@ export default async function MapPage({
         approxPins={approxPins}
         landmarks={landmarks}
         initialCategory={initialCategory}
-        totalSpecies={species.length}
       />
     </div>
   )

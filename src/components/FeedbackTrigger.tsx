@@ -1,5 +1,7 @@
 'use client'
 
+import type React from 'react'
+
 // Lightweight client button that opens the global FeedbackWidget modal,
 // optionally pre-filling topic + reference name via a custom DOM event.
 export default function FeedbackTrigger({
@@ -7,11 +9,13 @@ export default function FeedbackTrigger({
   referenceName,
   label = 'Suggest a correction',
   className,
+  style,
 }: {
   topic?: string
   referenceName?: string
   label?: string
   className?: string
+  style?: React.CSSProperties
 }) {
   function open() {
     window.dispatchEvent(
@@ -24,7 +28,7 @@ export default function FeedbackTrigger({
       type="button"
       onClick={open}
       className={className}
-      style={{ color: 'var(--md-primary)' }}
+      style={style ?? { color: 'var(--md-primary)' }}
     >
       {label}
     </button>

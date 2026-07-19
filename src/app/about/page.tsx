@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import FeedbackTrigger from '@/components/FeedbackTrigger'
 
 export default function AboutPage() {
   return (
@@ -115,6 +116,42 @@ export default function AboutPage() {
           especially the landscaping and gardening team — for keeping Elan Homes green and clean.
           This directory exists because of the green space you nurture every day.
         </p>
+      </div>
+
+      {/* Feedback entry point */}
+      <div
+        className="rounded-[16px] p-4 space-y-3"
+        style={{ background: 'var(--md-surface-container-low)', border: '1px solid var(--md-outline-variant)' }}
+      >
+        <p className="text-sm font-semibold" style={{ color: 'var(--md-on-surface)' }}>
+          Help improve this directory
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <FeedbackTrigger
+            topic="species_correction"
+            label="Correct a plant"
+            className="text-xs font-medium px-3 py-2 rounded-xl text-center transition-colors"
+            style={{ background: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)', border: '1px solid var(--md-outline-variant)' }}
+          />
+          <FeedbackTrigger
+            topic="missing_species"
+            label="Add missing plant"
+            className="text-xs font-medium px-3 py-2 rounded-xl text-center transition-colors"
+            style={{ background: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)', border: '1px solid var(--md-outline-variant)' }}
+          />
+          <FeedbackTrigger
+            topic="location_fix"
+            label="Fix a location"
+            className="text-xs font-medium px-3 py-2 rounded-xl text-center transition-colors"
+            style={{ background: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)', border: '1px solid var(--md-outline-variant)' }}
+          />
+          <FeedbackTrigger
+            topic="general"
+            label="General feedback"
+            className="text-xs font-medium px-3 py-2 rounded-xl text-center transition-colors"
+            style={{ background: 'var(--md-surface-container)', color: 'var(--md-on-surface-variant)', border: '1px solid var(--md-outline-variant)' }}
+          />
+        </div>
       </div>
 
       <div className="text-xs space-y-1 pt-2" style={{ color: 'var(--md-outline)' }}>
